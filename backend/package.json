@@ -6,10 +6,10 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "backend": "nest start --watch",
+    "backend":  "node dist/main",
     "frontend": "npm run start --prefix ../frontend",
     "start": "concurrently --kill-others-on-fail \"npm run backend\" \"npm run frontend\"",
-    "build": "nest build && xcopy templates dist\\templates /E /I /Y",
+    "build": "nest build && if not exist dist\\templates mkdir dist\\templates & xcopy templates dist\\templates /E /I /Y",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

@@ -10,6 +10,7 @@ import { ConfigModule } from '@nestjs/config';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { UsersModule } from './users/users.module';
+import { AvailabilityModule } from './availability/availability.module';
 
 @Module({
   imports: [
@@ -51,7 +52,7 @@ import { UsersModule } from './users/users.module';
       synchronize: true,
     }),
     
-     AuthModule, UsersModule,],
+     AuthModule, UsersModule, AvailabilityModule,],
   controllers: [AppController],
   providers: [
     AppService,{
