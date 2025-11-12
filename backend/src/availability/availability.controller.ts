@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, ForbiddenException, Req, BadRequestException, Query } from '@nestjs/common';
 import { AvailabilityService } from './availability.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -24,9 +24,17 @@ export class AvailabilityController {
     return this.availabilityService.findAll(req.user.id.toString());
   }
 
+  @Get('public')
+  @Roles(Role.PATIENT, Role.MEDECIN, Role.ADMIN) // Autorise les patients
+  async findByMedecinId(@Query('medecinId') medecinId: string) {
+  if (!medecinId) {
+    throw new BadRequestException('medecinId est requis');
+  }
+  return this.availabilityService.findByMedecinId(medecinId);
+}
  
 
-@Roles(Role.MEDECIN)
+/*@Roles(Role.MEDECIN)
   @Put(':id/status')
   async updateStatus(@Param('id') id: string, @Body('status') status: 'disponible' | 'occupé' | 'annulé', @Request() req: { user: User }) {
     const availability = await this.availabilityService.findOne(+id);
@@ -35,27 +43,33 @@ export class AvailabilityController {
       throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier cette disponibilité.');
     }
     return this.availabilityService.updateStatus(+id, status);
-  }
+  }*/
 
   @Roles(Role.MEDECIN)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any, @Request() req: { user: User }) {
-    const availability = await this.availabilityService.findOne(+id);
-    console.log('Comparaison:', { userId: req.user.id.toString(), medecinId: availability.medecinId.toString() });
-    if (req.user.id.toString() !== availability.medecinId.toString()) {
-      throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier cette disponibilité.');
-    }
-    return this.availabilityService.update(+id, body);
+  async update(
+  @Param('id') id: string,
+  @Body() body: any,
+  @Req() req: any,
+) {
+  const availability = await this.availabilityService.findOne(+id);
+  if (req.user.id.toString() !== availability.medecinId.toString()) {
+    throw new ForbiddenException('Accès refusé.');
   }
+  return this.availabilityService.update(+id, body);
+}
 
   @Roles(Role.MEDECIN)
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: { user: User }) {
-    const availability = await this.availabilityService.findOne(+id);
-    console.log('Comparaison:', { userId: req.user.id.toString(), medecinId: availability.medecinId.toString() });
-    if (req.user.id.toString() !== availability.medecinId.toString()) {
-      throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer cette disponibilité.');
-    }
-    return this.availabilityService.remove(+id);
+  const availability = await this.availabilityService.findOne(+id);
+  console.log('Comparaison:', { userId: req.user.id.toString(), medecinId: availability.medecinId.toString() });
+
+  if (req.user.id.toString() !== availability.medecinId.toString()) {
+    throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer cette disponibilité.');
   }
+
+  await this.availabilityService.remove(+id); // softDelete
+  return { message: 'Disponibilité supprimée avec succès.' };
+}
 }

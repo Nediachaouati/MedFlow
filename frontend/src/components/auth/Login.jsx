@@ -26,13 +26,17 @@ export default function Login() {
     try {
       const res = await axios.post("http://localhost:3000/auth/login", { email, password });
       localStorage.setItem("token", res.data.access_token);
-      localStorage.setItem("role", res.data.role || ""); // Supposons que le rôle est retourné par l'API
+      localStorage.setItem("role", res.data.role || ""); 
       if (res.data.role === "ADMIN") {
         navigate("/admin");
+      }  else if (res.data.role === "RECEPTIONNISTE") {
+        navigate("/receptionist");
       } else if (res.data.role === "MEDECIN") {
-        navigate("/doctor/dashboard"); // Redirection vers le dashboard du médecin
+        navigate("/doctor/dashboard"); 
+      }else if (res.data.role === "PATIENT") {
+        navigate("/patient/dashboard"); 
       }else {
-        navigate("/"); // Redirection par défaut vers /home pour d'autres rôles
+        navigate("/"); 
       }
     } catch (err) {
       setError(err.response?.data?.message || "Erreur de connexion");

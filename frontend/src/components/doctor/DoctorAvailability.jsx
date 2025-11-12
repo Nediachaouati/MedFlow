@@ -105,17 +105,17 @@ export default function DoctorAvailability() {
   const handleSaveEdit = async () => {
     try {
       const token = localStorage.getItem("token");
-      console.log("Données envoyées au PUT :", { day, date, startTime, endTime, status }); // Log des données envoyées
+      console.log("Données envoyées au PUT :", { day, date, startTime, endTime, status }); 
       const response = await axios.put(
         `http://localhost:3000/availability/${selectedAvailability.id}`,
         { day, date, startTime, endTime, status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log("Réponse du PUT :", response.data); // Log de la réponse
+      console.log("Réponse du PUT :", response.data); 
       const refreshResponse = await axios.get("http://localhost:3000/availability", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Données rechargées :", refreshResponse.data); // Log des données rechargées
+      console.log("Données rechargées :", refreshResponse.data); 
       setAvailabilities(refreshResponse.data);
       setAlert({ open: true, message: "Disponibilité modifiée avec succès !", severity: "success" });
       setEditOpen(false);
@@ -152,7 +152,7 @@ export default function DoctorAvailability() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        p: 2,
+        p: 0,
       }}
     >
       <Paper

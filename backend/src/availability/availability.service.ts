@@ -10,36 +10,39 @@ export class AvailabilityService {
     private availabilityRepository: Repository<Availability>,
   ) {}
 
-  async create(body: any, medecinId: string): Promise<Availability> {
-    console.log('Données reçues:', body);
+ async create(body: any, medecinId: string): Promise<Availability> {
+  console.log('Données reçues:', body);
 
-    if (!body || typeof body !== 'object' || !body.day || !body.date || !body.startTime || !body.endTime) {
-      throw new BadRequestException('Les champs day, date, startTime et endTime sont requis.');
-    }
-
-    const { day, date, startTime, endTime } = body;
-
-    if (!day || !date || !startTime || !endTime) {
-      throw new BadRequestException('Tous les champs doivent être remplis.');
-    }
-
-    const existing = await this.availabilityRepository.findOne({
-      where: { day, date, medecinId },
-    });
-    if (existing) {
-      throw new BadRequestException(`Une disponibilité existe déjà pour le jour ${day} et la date ${date}.`);
-    }
-
-    const availability = this.availabilityRepository.create({
-      medecinId,
-      day,
-      date,
-      startTime,
-      endTime,
-      status: 'disponible',
-    });
-    return this.availabilityRepository.save(availability);
+  if (!body || typeof body !== 'object' || !body.day || !body.date || !body.startTime || !body.endTime) {
+    throw new BadRequestException('Les champs day, date, startTime et endTime sont requis.');
   }
+
+  const { day, date, startTime, endTime, status } = body;
+
+  if (!day || !date || !startTime || !endTime) {
+    throw new BadRequestException('Tous les champs doivent être remplis.');
+  }
+
+  const existing = await this.availabilityRepository.findOne({
+    where: { day, date, medecinId },
+  });
+  if (existing) {
+    throw new BadRequestException(`Une disponibilité existe déjà pour le jour ${day} et la date ${date}.`);
+  }
+
+  const validStatuses = ['disponible', 'occupé', 'annulé'] as const;
+  const finalStatus = status && validStatuses.includes(status) ? status : 'disponible';
+
+  const availability = this.availabilityRepository.create({
+    medecinId,
+    day,
+    date,
+    startTime,
+    endTime,
+    status: finalStatus, 
+  });
+  return this.availabilityRepository.save(availability);
+}
 
   async findAll(medecinId: string): Promise<Availability[]> {
     return this.availabilityRepository.find({
@@ -56,26 +59,33 @@ export class AvailabilityService {
     return availability;
   }
 
-  async updateStatus(id: number, status: 'disponible' | 'occupé' | 'annulé'): Promise<Availability> {
+  async findByMedecinId(medecinId: string): Promise<Availability[]> {
+  return this.availabilityRepository.find({
+    where: { medecinId, status: 'disponible' },
+    order: { date: 'ASC', startTime: 'ASC' },
+  });
+}
+
+  /*async updateStatus(id: number, status: 'disponible' | 'occupé' | 'annulé'): Promise<Availability> {
     const availability = await this.findOne(id);
     availability.status = status;
     return this.availabilityRepository.save(availability);
-  }
+  }*/
 
   async update(id: number, body: any): Promise<Availability> {
-    const availability = await this.findOne(id);
+  const availability = await this.findOne(id);
+  const { day, date, startTime, endTime, status } = body;
 
-    const { day, date, startTime, endTime } = body;
-    if (day) availability.day = day;
-    if (date) availability.date = date;
-    if (startTime) availability.startTime = startTime;
-    if (endTime) availability.endTime = endTime;
+  if (day) availability.day = day;
+  if (date) availability.date = date;
+  if (startTime) availability.startTime = startTime;
+  if (endTime) availability.endTime = endTime;
+  if (status) availability.status = status; // AJOUTÉ
 
-    return this.availabilityRepository.save(availability);
-  }
+  return this.availabilityRepository.save(availability);
+}
 
   async remove(id: number): Promise<void> {
-    const availability = await this.findOne(id);
-    await this.availabilityRepository.remove(availability);
-  }
+  await this.availabilityRepository.softDelete(id);
+}
 }

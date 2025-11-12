@@ -111,6 +111,32 @@ export default function Home() {
                     Médecin
                   </Button>
                 )}
+
+                {user.role === "RECEPTIONNISTE" && (
+                  <Button
+                    component={Link}
+                    to="/receptionist/dashboard"
+                    sx={{
+                      color: "white",
+                      "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+                    }}
+                  >
+                    Réceptionniste
+                  </Button>
+                )}
+
+                {user.role === "PATIENT" && (
+                  <Button
+                    component={Link}
+                    to="/patient/dashboard"
+                    sx={{
+                      color: "white",
+                      "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+                    }}
+                  >
+                    Patient
+                  </Button>
+                )}
                 <IconButton
                   color="inherit"
                   onClick={handleLogout}
@@ -129,16 +155,16 @@ export default function Home() {
       <Box
         sx={{
           width: "100vw",
-          height: "100vh", // plein écran
+          height: "100vh", 
           backgroundImage: `url(${BackgroundImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          backgroundAttachment: "fixed", // image fixe
+          backgroundAttachment: "fixed", 
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden", // empêche tout scroll
+          overflow: "hidden",
           margin: 0,
           padding: 0,
           "&::before": {

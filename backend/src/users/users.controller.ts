@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -27,7 +27,7 @@ export class UsersController {
     return this.usersService.findUsersByRoles(role as Role);
   }
 
-  @Roles(Role.ADMIN, Role.RECEPTIONNISTE)
+  @Roles(Role.ADMIN, Role.PATIENT, Role.RECEPTIONNISTE)
   @Get('ids')
   async findUsersByIds(@Query('ids') ids: string) {
     const idArray = ids.split(',').map(Number);
@@ -52,6 +52,15 @@ export class UsersController {
     return this.usersService.findById(user.id);
   }
 
+  //Liste des médecins (pour patients)
+  @Get()
+@Roles(Role.PATIENT, Role.RECEPTIONNISTE, Role.ADMIN)
+async findByRole(@Query('role') role: string) {
+  if (role === 'MEDECIN') {
+    return this.usersService.findByRole(role);
+  }
+  throw new BadRequestException('Rôle non autorisé');
+}
   @Put('profile')
   @UseInterceptors(
     FileInterceptor('photo', {
@@ -93,6 +102,12 @@ export class UsersController {
     return user;
   }
 
+  @Roles(Role.RECEPTIONNISTE)
+  @Post('add-patient')
+  async addPatient(@Body() dto: CreateUserDto) {
+  return this.createWithRoleAndEmail(dto, Role.PATIENT);
+}
+
   @Roles(Role.ADMIN)
   @Post('add-receptionniste')
   async addReceptionniste(@Body() dto: CreateUserDto) {
@@ -114,12 +129,45 @@ export class UsersController {
 
 
   @Roles(Role.ADMIN)
-  @Delete(':id')
+  @Delete('admin/:id')
   async deleteUser(@Param('id') id: string) {
-    await this.usersService.softDeleteUser(+id);
-    return { message: `Utilisateur avec l'ID ${id} supprimé avec succès` };
+  await this.usersService.softDeleteUser(+id);
+  return { message: `Utilisateur avec l'ID ${id} supprimé avec succès` };
+}
+
+
+  @Roles(Role.RECEPTIONNISTE)
+  @Delete('patient/:id')
+  async deletePatient(@Param('id') id: string) {
+  const user = await this.usersService.findById(+id);
+  if (user.role !== Role.PATIENT) {
+    throw new ForbiddenException('Vous ne pouvez supprimer que des patients.');
   }
+  await this.usersService.softDeleteUser(+id);
+  return { message: `Patient avec l'ID ${id} supprimé avec succès` };
+}
   
+private async createWithRoleAndEmail(dto: CreateUserDto, role: Role) {
+  const { user, plainPassword } = await this.usersService.createWithRole(dto, role);
+
+  try {
+    const template = 
+      role === Role.PATIENT ? 'welcome-patient' :
+      role === Role.MEDECIN ? 'welcome-medecin' :
+      'welcome-receptionniste';
+
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: `Détails de votre compte ${role}`,
+      template,
+      context: { name: user.name || role, email: user.email, password: plainPassword },
+    });
+  } catch (error) {
+    console.error('Erreur email :', error);
+  }
+
+  return user;
+}
 
 
 }

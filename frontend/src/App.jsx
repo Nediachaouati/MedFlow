@@ -8,7 +8,11 @@ import Receptionists from "./components/admin/Receptionists";
 import Layout from "./components/layout/Layout";
 import DoctorDashboard from "./components/doctor/DoctorDashboard";
 import DoctorAvailability from "./components/doctor/DoctorAvailability";
+import ReceptionistDashboard from "./components/receptionist/ReceptionistDashboard";
+import ReceptionistPatients from "./components/receptionist/ReceptionistPatients";
+import PatientDashboard from "./components/patient/PatientDashboard";
 import { useState, useEffect } from "react";
+import PatientRendezvous from "./components/patient/PatientRendezvous";
 
 function AppContent() {
   const [role, setRole] = useState(null);
@@ -52,6 +56,33 @@ function AppContent() {
               <Route index element={<DoctorDashboard />} />
               <Route path="dashboard" element={<DoctorDashboard />} />
               <Route path="availability" element={<DoctorAvailability />} />
+            </Routes>
+          </Layout>
+        }
+      />
+
+      <Route
+        path="/receptionist/*"
+        element={
+          <Layout role={role} showSidebar={true}>
+            <Routes>
+              <Route index element={<ReceptionistDashboard />} /> {/* Page par défaut */}
+              <Route path="dashboard" element={<ReceptionistDashboard />} />
+              <Route path="patients" element={<ReceptionistPatients />} />
+            </Routes>
+          </Layout>
+        }
+      />
+
+      <Route
+        path="/patient/*"
+        element={
+          <Layout role={role} showSidebar={true}>
+            <Routes>
+              <Route index element={<PatientDashboard />} /> 
+              <Route path="dashboard" element={<PatientDashboard />} />
+              <Route path="rendezvous" element={<PatientRendezvous/>} />
+              
             </Routes>
           </Layout>
         }

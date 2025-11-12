@@ -104,6 +104,30 @@ export default function Navbar({ role }) {
                   Médecin
                 </Button>
               )}
+              {role === "RECEPTIONNISTE" && (
+                <Button
+                  component={Link}
+                   to="/receptionist"
+                   sx={{
+                    color: "white",
+                   "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+                    }}
+                  >
+                   Réceptionniste
+                   </Button>
+                )}
+                {role === "PATIENT" && (
+                <Button
+                  component={Link}
+                   to="/patient"
+                   sx={{
+                    color: "white",
+                   "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+                    }}
+                  >
+                   Patient
+                   </Button>
+                )}
               <IconButton
                 color="inherit"
                 onClick={handleLogout}

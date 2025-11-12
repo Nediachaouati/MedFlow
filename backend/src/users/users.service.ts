@@ -65,6 +65,19 @@ export class UsersService {
     });
   }
 
+ async findByRole(role: string): Promise<User[]> {
+  // Convertir string → Role enum
+  const roleEnum = Role[role as keyof typeof Role];
+  if (!roleEnum) {
+    throw new BadRequestException('Rôle invalide');
+  }
+
+  return this.usersRepository.find({
+    where: { role: roleEnum, deleted_at: IsNull() },
+    select: ['id', 'name', 'email'],
+  });
+}
+
   async create(dto: CreateUserDto): Promise<User> {
     const { email, password, name, phoneNumber, address, birthDate } = dto;
     const hashedPassword = await bcrypt.hash(password, await bcrypt.genSalt());
@@ -109,6 +122,7 @@ export class UsersService {
 
     return { user: newUser, plainPassword: password };
   }
+  
 
   async update(id: number, updateUserDto: UpdateUserDto, photo?: Express.Multer.File): Promise<User> {
     const user = await this.findOneById(id);

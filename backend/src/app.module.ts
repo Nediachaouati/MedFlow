@@ -11,6 +11,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { MailerModule } from '@nestjs-modules/mailer';
 import { UsersModule } from './users/users.module';
 import { AvailabilityModule } from './availability/availability.module';
+import { AppointmentModule } from './appointment/appointment.module';
 
 @Module({
   imports: [
@@ -52,7 +53,7 @@ import { AvailabilityModule } from './availability/availability.module';
       synchronize: true,
     }),
     
-     AuthModule, UsersModule, AvailabilityModule,],
+     AuthModule, UsersModule, AvailabilityModule, AppointmentModule,],
   controllers: [AppController],
   providers: [
     AppService,{
