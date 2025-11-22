@@ -98,7 +98,7 @@ export class UsersService {
   }
 
   async createWithRole(dto: CreateUserDto, role: Role): Promise<{ user: User; plainPassword: string }> {
-    const { email, password, name, medecinId } = dto;
+    const { email, password, name,speciality, medecinId } = dto;
 
     let medecin: User | undefined;
     if (role === Role.RECEPTIONNISTE && medecinId) {
@@ -113,6 +113,7 @@ export class UsersService {
       email,
       password: hashedPassword,
       name,
+      speciality,
       role,
       medecinId: role === Role.RECEPTIONNISTE ? medecinId : undefined,
     });

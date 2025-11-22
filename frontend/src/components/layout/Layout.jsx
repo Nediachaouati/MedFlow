@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import Navbar from "./Navbar";
-import Sidebar from "./SideBar";
+import Sidebar from "./Sidebar";
 
 export default function Layout({ role, children, showSidebar = true }) {
   return (

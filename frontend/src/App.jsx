@@ -13,6 +13,11 @@ import ReceptionistPatients from "./components/receptionist/ReceptionistPatients
 import PatientDashboard from "./components/patient/PatientDashboard";
 import { useState, useEffect } from "react";
 import PatientRendezvous from "./components/patient/PatientRendezvous";
+import DoctorCalendar from "./components/doctor/DoctorCalendar";
+import PatientCalendar from "./components/patient/PatientCalendar";
+import MyAppointments from "./components/patient/MyAppointments";
+import ConsultationModal from "./components/doctor/ConsultationModal";
+
 
 function AppContent() {
   const [role, setRole] = useState(null);
@@ -22,6 +27,7 @@ function AppContent() {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
   }, [location]);
+  
 
   return (
     <Routes>
@@ -56,6 +62,8 @@ function AppContent() {
               <Route index element={<DoctorDashboard />} />
               <Route path="dashboard" element={<DoctorDashboard />} />
               <Route path="availability" element={<DoctorAvailability />} />
+              <Route path="calendar" element={<DoctorCalendar />} />
+          <Route path="consultation-modal/:id" element={<ConsultationModal />} />
             </Routes>
           </Layout>
         }
@@ -82,7 +90,8 @@ function AppContent() {
               <Route index element={<PatientDashboard />} /> 
               <Route path="dashboard" element={<PatientDashboard />} />
               <Route path="rendezvous" element={<PatientRendezvous/>} />
-              
+              <Route path="calendar/:medecinId/:medecinName" element={<PatientCalendar />} />
+              <Route path="appointments" element={<MyAppointments />} />
             </Routes>
           </Layout>
         }

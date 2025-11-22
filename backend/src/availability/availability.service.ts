@@ -1,91 +1,191 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Availability } from './entities/availability.entity';
+import { TimeSlot } from './entities/time-slot.entity';
+import { CreateAvailabilityDto } from './dto/create-availability.dto';
 
 @Injectable()
 export class AvailabilityService {
   constructor(
     @InjectRepository(Availability)
-    private availabilityRepository: Repository<Availability>,
+    private availabilityRepo: Repository<Availability>,
+    @InjectRepository(TimeSlot)
+    private timeSlotRepo: Repository<TimeSlot>,
   ) {}
 
- async create(body: any, medecinId: string): Promise<Availability> {
-  console.log('Données reçues:', body);
+  private readonly SLOT_DURATION = 20;
 
-  if (!body || typeof body !== 'object' || !body.day || !body.date || !body.startTime || !body.endTime) {
-    throw new BadRequestException('Les champs day, date, startTime et endTime sont requis.');
-  }
 
-  const { day, date, startTime, endTime, status } = body;
-
-  if (!day || !date || !startTime || !endTime) {
-    throw new BadRequestException('Tous les champs doivent être remplis.');
-  }
-
-  const existing = await this.availabilityRepository.findOne({
-    where: { day, date, medecinId },
-  });
-  if (existing) {
-    throw new BadRequestException(`Une disponibilité existe déjà pour le jour ${day} et la date ${date}.`);
-  }
-
-  const validStatuses = ['disponible', 'occupé', 'annulé'] as const;
-  const finalStatus = status && validStatuses.includes(status) ? status : 'disponible';
-
-  const availability = this.availabilityRepository.create({
-    medecinId,
-    day,
-    date,
-    startTime,
-    endTime,
-    status: finalStatus, 
-  });
-  return this.availabilityRepository.save(availability);
-}
-
-  async findAll(medecinId: string): Promise<Availability[]> {
-    return this.availabilityRepository.find({
-      where: { medecinId },
-      order: { day: 'ASC', date: 'ASC', startTime: 'ASC' },
+  /** Créer une nouvelle disponibilité → génère automatiquement les créneaux de 20 min */
+  async create(dto: CreateAvailabilityDto, medecinId: string): Promise<Availability> {
+    const existing = await this.availabilityRepo.findOne({
+      where: { medecinId: Number(medecinId), date: dto.date },
     });
+    if (existing) {
+      throw new BadRequestException('Vous avez déjà une plage horaire pour cette date.');
+    }
+
+    const availability = this.availabilityRepo.create({
+      ...dto,
+      medecinId: Number(medecinId), // maintenant number
+      status: 'disponible',
+    });
+
+    const saved = await this.availabilityRepo.save(availability);
+    await this.generateTimeSlots(saved);
+
+    return saved; // saved est bien un objet, pas un tableau
   }
 
-  async findOne(id: number): Promise<Availability> {
-    const availability = await this.availabilityRepository.findOne({ where: { id } });
-    if (!availability) {
-      throw new NotFoundException(`Disponibilité avec ID ${id} non trouvée.`);
+  /** Génère les créneaux toutes les 20 minutes entre startTime et endTime */
+  private async generateTimeSlots(availability: Availability) {
+    const start = this.timeToMinutes(availability.startTime);
+    const end = this.timeToMinutes(availability.endTime);
+
+    for (let time = start; time < end; time += this.SLOT_DURATION) {
+      const startTime = this.minutesToTime(time);
+      const endTime = this.minutesToTime(time + this.SLOT_DURATION);
+
+      const slot = this.timeSlotRepo.create({
+        availabilityId: availability.id,
+        medecinId: availability.medecinId, // déjà number
+        date: availability.date,
+        startTime,
+        endTime,
+        status: 'disponible' as const,
+      });
+
+      await this.timeSlotRepo.save(slot);
     }
+  }
+/** Convertit "09:30" → 570 minutes */
+  private timeToMinutes(time: string): number {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  }
+/** Convertit 570 minutes → "09:30" */
+  private minutesToTime(minutes: number): string {
+    const h = Math.floor(minutes / 60).toString().padStart(2, '0');
+    const m = (minutes % 60).toString().padStart(2, '0');
+    return `${h}:${m}`;
+  }
+
+
+/** Récupérer toutes les disponibilités du médecin */
+  async findAll(medecinId: string) {
+    return this.availabilityRepo.find({ where: { medecinId: Number(medecinId) } });
+  }
+
+
+  /** Récupérer une disponibilité par ID */
+  async findOne(id: number): Promise<Availability> {
+    const availability = await this.availabilityRepo.findOne({ where: { id } });
+    if (!availability) throw new NotFoundException(`Disponibilité non trouvée.`);
     return availability;
   }
 
+
+  /** Récupérer toutes les dates disponibles d'un médecin (pour le calendrier patient) */
   async findByMedecinId(medecinId: string): Promise<Availability[]> {
-  return this.availabilityRepository.find({
-    where: { medecinId, status: 'disponible' },
-    order: { date: 'ASC', startTime: 'ASC' },
+    return this.availabilityRepo.find({
+      where: { medecinId: Number(medecinId) },
+      order: { date: 'ASC' },
+    });
+  }
+/*
+  async getTimeSlotsByDate(medecinId: string, date: string): Promise<TimeSlot[]> {
+  const normalizedDate = date.substring(0, 10); // Toujours "YYYY-MM-DD"
+
+  return this.timeSlotRepo
+    .createQueryBuilder("slot")
+    .where("slot.medecinId = :medecinId", { medecinId: Number(medecinId) })
+    .andWhere("DATE(slot.date) = :date", { date: normalizedDate })
+    .orderBy("slot.startTime", "ASC")
+    .leftJoinAndSelect("slot.patient", "patient")
+    .getMany();
+}
+*/
+
+
+
+/**
+   * LA MÉTHODE LA PLUS IMPORTANTE
+   * Récupère tous les créneaux d'une date pour un médecin
+   * Gère proprement les RDV annulés → les créneaux redeviennent libres
+   * Renvoie un objet propre et clair pour le frontend
+   */
+
+async getTimeSlotsByDate(medecinId: string, date: string): Promise<any[]> {
+  const normalizedDate = date.substring(0, 10);
+
+  const slots = await this.timeSlotRepo
+    .createQueryBuilder('slot')
+    .where('slot.medecinId = :medecinId', { medecinId: Number(medecinId) })
+    .andWhere('slot.date = :date', { date: normalizedDate })
+    .leftJoinAndSelect('slot.appointment', 'appointment')
+    .leftJoinAndSelect('appointment.patient', 'patient')
+    .orderBy('slot.startTime', 'ASC')
+    .getMany();
+
+  // on tient compte du statut "annulé"
+  return slots.map(slot => {
+    // Si le RDV existe mais est annulé → on force "disponible"
+    if (slot.appointment && slot.appointment.status === 'annulé') {
+      return {
+        ...slot,
+        status: 'disponible',
+        patient: null,
+        appointment: null, // on cache complètement le RDV annulé
+      };
+    }
+
+    // Sinon : comportement normal
+    if (slot.appointment) {
+      return {
+        ...slot,
+        status: 'occupé',
+        patient: slot.appointment.patient,
+        appointment: {
+          id: slot.appointment.id,
+          status: slot.appointment.status,
+        },
+      };
+    }
+
+    // Créneau libre
+    return {
+      ...slot,
+      status: 'disponible',
+      patient: null,
+      appointment: null,
+    };
   });
 }
 
-  /*async updateStatus(id: number, status: 'disponible' | 'occupé' | 'annulé'): Promise<Availability> {
-    const availability = await this.findOne(id);
-    availability.status = status;
-    return this.availabilityRepository.save(availability);
-  }*/
 
-  async update(id: number, body: any): Promise<Availability> {
-  const availability = await this.findOne(id);
-  const { day, date, startTime, endTime, status } = body;
+/** Modifier une disponibilité → supprime et régénère tous les créneaux */
+async update(id: number, body: any, medecinId: string) {
+    const avail = await this.availabilityRepo.findOneOrFail({ where: { id } });
+    if (avail.medecinId !== Number(medecinId)) {
+      throw new BadRequestException('Accès refusé');
+    }
 
-  if (day) availability.day = day;
-  if (date) availability.date = date;
-  if (startTime) availability.startTime = startTime;
-  if (endTime) availability.endTime = endTime;
-  if (status) availability.status = status; // AJOUTÉ
+    await this.timeSlotRepo.delete({ availabilityId: id });
+    Object.assign(avail, body);
+    const updated = await this.availabilityRepo.save(avail);
+    await this.generateTimeSlots(updated);
+    return updated;
+  }
 
-  return this.availabilityRepository.save(availability);
-}
+  /** Supprimer une disponibilité → soft delete + suppression des créneaux */
+  async remove(id: number, medecinId: string) {
+    const avail = await this.availabilityRepo.findOneOrFail({ where: { id } });
+    if (avail.medecinId !== Number(medecinId)) {
+      throw new BadRequestException('Accès refusé');
+    }
 
-  async remove(id: number): Promise<void> {
-  await this.availabilityRepository.softDelete(id);
-}
+    await this.timeSlotRepo.delete({ availabilityId: id });
+    await this.availabilityRepo.softDelete(id);
+  }
 }

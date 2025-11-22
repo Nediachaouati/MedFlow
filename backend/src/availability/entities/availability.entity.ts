@@ -7,14 +7,14 @@ export class Availability {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  medecinId: string; // ID du médecin comme chaîne
+  @Column({ type: 'int' })
+  medecinId: number;
 
   @Column()
   day: string; // Ex. "Lundi"
 
-  @Column()
-  date: string; // Ex. "2025-10-27"
+  @Column({ type: 'date' })  
+  date: string;
 
   @Column()
   startTime: string; // Ex. "09:00"
@@ -29,8 +29,7 @@ export class Availability {
   })
   status: 'disponible' | 'occupé' | 'annulé';
 
-  @ManyToOne(() => User, user => user.availabilities, { onDelete: 'CASCADE', nullable: true })
-  @JoinColumn({ name: 'medecinId' })
+  @ManyToOne(() => User, (user) => user.availabilities)
   medecin: User;
 
   @CreateDateColumn()

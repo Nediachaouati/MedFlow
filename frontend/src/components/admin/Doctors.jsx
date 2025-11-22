@@ -9,7 +9,7 @@ export default function Doctors() {
   const navigate = useNavigate();
   const [doctors, setDoctors] = useState([]);
   const [openForm, setOpenForm] = useState(false);
-  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", password: "",speciality: "" });
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
 
   // Récupérer la liste des médecins depuis l'API
@@ -50,6 +50,7 @@ export default function Doctors() {
           name: fullName,
           email: formData.email,
           password: formData.password,
+          speciality: formData.speciality,
           phoneNumber: "",
           address: "",
           birthDate: null
@@ -59,7 +60,7 @@ export default function Doctors() {
       setDoctors([...doctors, { id: Date.now(), name: fullName, email: formData.email }]); // Mise à jour locale temporaire
       setAlert({ open: true, message: "Médecin ajouté avec succès !", severity: "success" });
       setOpenForm(false);
-      setFormData({ firstName: "", lastName: "", email: "", password: "" });
+      setFormData({ firstName: "", lastName: "", email: "", password: "" , speciality: ""  });
     } catch (error) {
       console.error("Erreur lors de l'ajout du médecin :", error);
       setAlert({ open: true, message: "Erreur lors de l'ajout du médecin.", severity: "error" });
@@ -122,6 +123,7 @@ export default function Doctors() {
           <TableRow>
             <TableCell sx={{ color: "black", backgroundColor: "#cdd7dfff" }}>Nom</TableCell>
             <TableCell sx={{ color: "black", backgroundColor: "#cdd7dfff" }}>Email</TableCell>
+             <TableCell sx={{ color: "black", backgroundColor: "#cdd7dfff" }}>Spécialité</TableCell>
             <TableCell sx={{ color: "black", backgroundColor: "#cdd7dfff" }}>Action</TableCell>
           </TableRow>
         </TableHead>
@@ -130,6 +132,7 @@ export default function Doctors() {
             <TableRow key={doctor.id}>
               <TableCell>{doctor.name}</TableCell>
               <TableCell>{doctor.email}</TableCell>
+              <TableCell>{doctor.speciality}</TableCell>
               <TableCell>
                 <IconButton onClick={() => handleDeleteDoctor(doctor.id)} sx={{ color: "#D32F2F" }}> {/* Couleur rouge pour la poubelle */}
                   <DeleteIcon />
@@ -177,6 +180,15 @@ export default function Doctors() {
             type="password"
             fullWidth
             value={formData.password}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            name="speciality"
+            label="Spécialité"
+            type="speciality"
+            fullWidth
+            value={formData.speciality}
             onChange={handleChange}
           />
         </DialogContent>

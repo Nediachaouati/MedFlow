@@ -9,11 +9,13 @@ import {
   DeleteDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { TimeSlot } from 'src/availability/entities/time-slot.entity';
 
 export enum AppointmentStatus {
   PENDING = 'en_attente',
   CONFIRMED = 'confirmé',
   CANCELLED = 'annulé',
+  COMPLETED = 'terminé',
 }
 
 @Entity('appointments')
@@ -22,17 +24,17 @@ export class Appointment {
   id: number;
 
   @Column()
-  medecinId: number; // number
+  medecinId: number;
 
   @Column()
-  patientId: number; // number
+  patientId: number;
 
   @Column()
-  date: string; // "2025-10-27"
+  timeSlotId: number;        
 
-  @Column()
-  time: string; // "14:30"
-
+  @Column({ type: 'date', nullable: true })  
+  date: string;
+  
   @Column({
     type: 'enum',
     enum: AppointmentStatus,
@@ -48,6 +50,16 @@ export class Appointment {
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'patientId' })
   patient: User;
+
+  @ManyToOne(() => TimeSlot, { eager: true })
+  @JoinColumn({ name: 'timeSlotId' })
+  timeSlot: TimeSlot;
+
+  @Column({ type: 'text', nullable: true })
+  diagnostic?: string;
+
+  @Column({ type: 'text', nullable: true })
+  medicaments?: string;
 
   @CreateDateColumn()
   created_at: Date;
