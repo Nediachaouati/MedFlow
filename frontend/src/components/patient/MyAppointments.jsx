@@ -10,6 +10,7 @@ import {
   CircularProgress,
   Chip,
 } from "@mui/material";
+import { ReceiptLong } from "@mui/icons-material";
 import axios from "axios";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -81,14 +82,65 @@ export default function MyAppointments() {
       doc.setFont("helvetica", "bold");
       doc.text("Ordonnance :", 20, y);
       y += 10;
-      apt.medicaments.split("\n").filter(Boolean).forEach(line => {
+      apt.medicaments.split("\n").filter(Boolean).forEach((line) => {
         doc.setFont("helvetica", "normal");
         doc.text("• " + line.trim(), 30, y);
         y += 8;
       });
     }
 
-    doc.save(`ordonnance_${apt.patient.name.replace(/\s+/g, "_")}_${consultDate}.pdf`);
+    doc.save(
+      `ordonnance_${apt.patient.name.replace(/\s+/g, "_")}_${consultDate}.pdf`
+    );
+  };
+
+  const downloadBill = async (apt) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3000/bills/${apt.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const bill = res.data;
+
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("FACTURE MÉDICALE", 105, 20, { align: "center" });
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Patient : ${bill.patient.name}`, 20, 40);
+      doc.text(`Docteur : Dr. ${apt.medecin.name}`, 20, 50);
+      doc.text(
+        `Date : ${format(new Date(apt.date), "dd/MM/yyyy")}`,
+        20,
+        60
+      );
+      doc.text(`Status : ${bill.status}`, 20, 70);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Items :", 20, 85);
+      doc.setFont("helvetica", "normal");
+
+      let y = 95;
+      bill.items.forEach((item) => {
+        doc.text(
+          `• ${item.description} | ${item.quantity} x ${item.price} €`,
+          25,
+          y
+        );
+        y += 8;
+      });
+
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total : ${bill.totalAmount} €`, 20, y + 10);
+
+      doc.save(`facture_${bill.patient.name.replace(/\s+/g, "_")}.pdf`);
+    } catch (err) {
+      console.error("Erreur téléchargement facture :", err);
+      alert("Erreur téléchargement facture");
+    }
   };
 
   useEffect(() => {
@@ -96,7 +148,11 @@ export default function MyAppointments() {
   }, []);
 
   const now = new Date();
-  const todayDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayDateOnly = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
 
   const parseDateTime = (dateStr, timeStr) => {
     const [y, m, d] = dateStr.split("-");
@@ -104,19 +160,17 @@ export default function MyAppointments() {
     return new Date(y, m - 1, d, h, min);
   };
 
-  // À venir : RDV futurs ou aujourd'hui + non annulés + non terminés
-  const upcoming = appointments.filter(apt => {
+  const upcoming = appointments.filter((apt) => {
     const aptDate = parseDateTime(apt.date, apt.timeSlot.startTime);
     return apt.status !== "annulé" && apt.status !== "terminé" && aptDate >= todayDateOnly;
   });
 
-  // Terminés
-  const completed = appointments.filter(apt => apt.status === "terminé");
-
-  // Annulés ou passés sans consultation
-  const cancelledOrPast = appointments.filter(apt =>
-    apt.status === "annulé" ||
-    (apt.status !== "terminé" && parseDateTime(apt.date, apt.timeSlot.startTime) < todayDateOnly)
+  const completed = appointments.filter((apt) => apt.status === "terminé");
+  const cancelledOrPast = appointments.filter(
+    (apt) =>
+      apt.status === "annulé" ||
+      (apt.status !== "terminé" &&
+        parseDateTime(apt.date, apt.timeSlot.startTime) < todayDateOnly)
   );
 
   if (loading) {
@@ -128,20 +182,32 @@ export default function MyAppointments() {
   }
 
   return (
-    <Paper elevation={6} sx={{ p: 5, maxWidth: 1100, mx: "auto", borderRadius: 4, mt: 4 }}>
-      <Typography variant="h4" gutterBottom fontWeight="bold" color="primary" textAlign="center">
+    <Paper
+      elevation={6}
+      sx={{ p: 5, maxWidth: 1100, mx: "auto", borderRadius: 4, mt: 4 }}
+    >
+      <Typography
+        variant="h4"
+        gutterBottom
+        fontWeight="bold"
+        color="primary"
+        textAlign="center"
+      >
         Mes Rendez-vous
       </Typography>
 
       {/* À VENIR */}
-      <Typography variant="h5" sx={{ mb: 3, color: "#2e7d32", fontWeight: "bold" }}>
+      <Typography
+        variant="h5"
+        sx={{ mb: 3, color: "#2e7d32", fontWeight: "bold" }}
+      >
         À venir ({upcoming.length})
       </Typography>
 
       {upcoming.length === 0 ? (
         <Alert severity="info">Aucun rendez-vous à venir</Alert>
       ) : (
-        upcoming.map(apt => {
+        upcoming.map((apt) => {
           const aptDate = parseDateTime(apt.date, apt.timeSlot.startTime);
           const isToday = aptDate.toDateString() === now.toDateString();
           const hoursUntil = (aptDate.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -195,7 +261,10 @@ export default function MyAppointments() {
       <Divider sx={{ my: 5 }} />
 
       {/* HISTORIQUE */}
-      <Typography variant="h5" sx={{ mb: 3, color: "#1976d2", fontWeight: "bold" }}>
+      <Typography
+        variant="h5"
+        sx={{ mb: 3, color: "#1976d2", fontWeight: "bold" }}
+      >
         Historique ({completed.length + cancelledOrPast.length})
       </Typography>
 
@@ -204,7 +273,7 @@ export default function MyAppointments() {
       ) : (
         <>
           {/* Terminés avec ordonnance */}
-          {completed.map(apt => {
+          {completed.map((apt) => {
             const aptDate = parseDateTime(apt.date, apt.timeSlot.startTime);
 
             return (
@@ -233,20 +302,31 @@ export default function MyAppointments() {
                       </Typography>
                     )}
                   </Box>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => downloadOrdonnance(apt)}
-                  >
-                    Télécharger Ordonnance
-                  </Button>
-                </Box>
+              
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => downloadOrdonnance(apt)}
+                    >
+                      Télécharger Ordonnance
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<ReceiptLong />}
+                      sx={{ ml: 2 }}
+                      onClick={() => downloadBill(apt)}
+                    >
+                      Facture
+                    </Button>
+                  </Box>
+                
               </Paper>
             );
           })}
 
           {/* Annulés ou passés sans consultation */}
-          {cancelledOrPast.map(apt => {
+          {cancelledOrPast.map((apt) => {
             const aptDate = parseDateTime(apt.date, apt.timeSlot.startTime);
 
             return (
