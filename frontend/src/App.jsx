@@ -17,6 +17,7 @@ import DoctorCalendar from "./components/doctor/DoctorCalendar";
 import PatientCalendar from "./components/patient/PatientCalendar";
 import MyAppointments from "./components/patient/MyAppointments";
 import ConsultationModal from "./components/doctor/ConsultationModal";
+import Profile from "./components/profile/Profile";
 
 
 function AppContent() {
@@ -100,7 +101,7 @@ function AppContent() {
         path="/profile"
         element={
           <Layout role={role} showSidebar={true}>
-            <div>Page Profil</div>
+      <Profile />
           </Layout>
         }
       />

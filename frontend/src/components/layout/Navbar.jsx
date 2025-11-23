@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -8,9 +9,12 @@ import {
   IconButton,
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
+import axios from "axios";
 
-export default function Navbar({ role }) {
+export default function Navbar() {
   const navigate = useNavigate();
+  const [userName, setUserName] = useState("");
+  const [role, setRole] = useState("");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -18,13 +22,34 @@ export default function Navbar({ role }) {
     navigate("/");
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const savedRole = localStorage.getItem("role");
+    if (!token) return;
+
+    setRole(savedRole);
+
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/users/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUserName(res.data.name);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
   return (
     <AppBar
       position="fixed"
       sx={{
         width: "calc(100% - 240px)",
         ml: "240px",
-        backgroundColor: "#4A90E2", // Couleur uniforme pour tous les rôles avec Sidebar
+        backgroundColor: "#4A90E2",
         boxShadow: "none",
         height: "64px",
         justifyContent: "center",
@@ -49,7 +74,7 @@ export default function Navbar({ role }) {
             fontSize: "1.2rem",
           }}
         >
-          
+          MedFlow
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
@@ -78,56 +103,18 @@ export default function Navbar({ role }) {
             </>
           )}
 
-          {role && (
+          {role && userName && (
             <>
-              {role === "ADMIN" && (
-                <Button
-                  component={Link}
-                  to="/admin"
-                  sx={{
-                    color: "white",
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
-                  }}
-                >
-                  Admin
-                </Button>
-              )}
-              {role === "MEDECIN" && (
-                <Button
-                  component={Link}
-                  to="/doctor"
-                  sx={{
-                    color: "white",
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
-                  }}
-                >
-                  Médecin
-                </Button>
-              )}
-              {role === "RECEPTIONNISTE" && (
-                <Button
-                  component={Link}
-                   to="/receptionist"
-                   sx={{
-                    color: "white",
-                   "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
-                    }}
-                  >
-                   Réceptionniste
-                   </Button>
-                )}
-                {role === "PATIENT" && (
-                <Button
-                  component={Link}
-                   to="/patient"
-                   sx={{
-                    color: "white",
-                   "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
-                    }}
-                  >
-                   Patient
-                   </Button>
-                )}
+              <Button
+                component={Link}
+                to="/profile"
+                sx={{
+                  color: "white",
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+                }}
+              >
+                {userName}
+              </Button>
               <IconButton
                 color="inherit"
                 onClick={handleLogout}
