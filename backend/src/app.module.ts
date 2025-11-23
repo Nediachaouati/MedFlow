@@ -12,6 +12,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { UsersModule } from './users/users.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { AppointmentModule } from './appointment/appointment.module';
+import { BillsModule } from './bills/bills.module';
 
 @Module({
   imports: [
@@ -53,7 +54,7 @@ import { AppointmentModule } from './appointment/appointment.module';
       synchronize: true,
     }),
     
-     AuthModule, UsersModule, AvailabilityModule, AppointmentModule,],
+     AuthModule, UsersModule, AvailabilityModule, AppointmentModule, BillsModule,],
   controllers: [AppController],
   providers: [
     AppService,{
