@@ -94,54 +94,39 @@ export default function MyAppointments() {
     );
   };
 
-  const downloadBill = async (apt) => {
-    try {
-      const res = await axios.get(
-        `http://localhost:3000/bills/${apt.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+const downloadBill = async (apt) => {
+  try {
+    // Get the bill using the appointment id
+    const res = await axios.get(
+      `http://localhost:3000/bill/appointment/${apt.id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const bill = res.data;
 
-      const bill = res.data;
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("FACTURE MÉDICALE", 105, 20, { align: "center" });
 
-      const doc = new jsPDF();
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(20);
-      doc.text("FACTURE MÉDICALE", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
 
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Patient : ${bill.patient.name}`, 20, 40);
-      doc.text(`Docteur : Dr. ${apt.medecin.name}`, 20, 50);
-      doc.text(
-        `Date : ${format(new Date(apt.date), "dd/MM/yyyy")}`,
-        20,
-        60
-      );
-      doc.text(`Status : ${bill.status}`, 20, 70);
+    // Use frontend appointment data to show names
+    doc.text(`Patient : ${apt.patient.name}`, 20, 40);
+    doc.text(`Docteur : Dr. ${apt.medecin.name}`, 20, 50);
+    doc.text(`Date de consultation : ${format(new Date(apt.date), "dd/MM/yyyy")}`, 20, 60);
 
-      doc.setFont("helvetica", "bold");
-      doc.text("Items :", 20, 85);
-      doc.setFont("helvetica", "normal");
+    doc.text(`Bill ID : ${bill.id}`, 20, 70);
+    doc.text(`Montant total : ${bill.amount} DT`, 20, 80);
+    doc.text(`Status : ${bill.status}`, 20, 90);
 
-      let y = 95;
-      bill.items.forEach((item) => {
-        doc.text(
-          `• ${item.description} | ${item.quantity} x ${item.price} €`,
-          25,
-          y
-        );
-        y += 8;
-      });
+    doc.save(`facture_${apt.patient.name.replace(/\s+/g, "_")}_${format(new Date(apt.date), "ddMMyyyy")}.pdf`);
+  } catch (err) {
+    console.error("Erreur téléchargement facture :", err);
+    alert("Erreur téléchargement facture");
+  }
+};
 
-      doc.setFont("helvetica", "bold");
-      doc.text(`Total : ${bill.totalAmount} €`, 20, y + 10);
-
-      doc.save(`facture_${bill.patient.name.replace(/\s+/g, "_")}.pdf`);
-    } catch (err) {
-      console.error("Erreur téléchargement facture :", err);
-      alert("Erreur téléchargement facture");
-    }
-  };
 
   useEffect(() => {
     fetchAppointments();

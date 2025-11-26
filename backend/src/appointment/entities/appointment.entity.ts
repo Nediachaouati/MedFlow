@@ -7,9 +7,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { TimeSlot } from 'src/availability/entities/time-slot.entity';
+import { Bill } from 'src/bill/entities/bill.entity';
 
 export enum AppointmentStatus {
   PENDING = 'en_attente',
@@ -41,6 +43,8 @@ export class Appointment {
     default: AppointmentStatus.PENDING,
   })
   status: AppointmentStatus;
+@OneToMany(() => Bill, (bill) => bill.appointment)
+bill: Bill[];
 
   // Relations
   @ManyToOne(() => User, { onDelete: 'CASCADE' })

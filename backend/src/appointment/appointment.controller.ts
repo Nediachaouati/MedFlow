@@ -6,7 +6,8 @@ import {
   Post,
   Put,
   UseGuards,
-  Request, 
+  Request,
+  Query, 
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -18,6 +19,12 @@ import { Role } from 'src/role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
+  @Roles(Role.RECEPTIONNISTE)
+  @Get()
+  async findByDate(@Query('date') date: string) {
+    return this.appointmentService.findByDate(date);
+  }
+
 
   /**
    * Créer un rendez-vous
@@ -78,7 +85,7 @@ async findOne(@Param('id') id: string) {
    * Marquer une consultation comme terminée
    * Le médecin entre le diagnostic + ordonnance
    */
-  @Roles(Role.MEDECIN)
+  @Roles(Role.MEDECIN,Role.RECEPTIONNISTE)
 @Put(':id/complete')
 async complete(
   @Param('id') id: string,

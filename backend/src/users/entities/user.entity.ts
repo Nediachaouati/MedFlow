@@ -1,6 +1,7 @@
 
 import { Appointment } from "src/appointment/entities/appointment.entity";
 import { Availability } from "src/availability/entities/availability.entity";
+import { Bill } from "src/bill/entities/bill.entity";
 import { Role } from "src/role.enum";
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
@@ -17,6 +18,8 @@ export class User {
 
   @Column({ nullable: true })
   name: string;
+@OneToMany(() => Bill, (bill) => bill.patient)
+bills: Bill[];
 
   @Column({
     type: 'enum',

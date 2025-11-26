@@ -11,10 +11,12 @@ import { TimeSlot } from '../availability/entities/time-slot.entity';
 import { User } from '../users/entities/user.entity';
 import { AppointmentStatus } from './entities/appointment.entity';
 import { Role } from '../role.enum';
+import { BillService } from 'src/bill/bill.service';
 
 @Injectable()
 export class AppointmentService {
   constructor(
+    private billService: BillService,
     @InjectRepository(Appointment)
     private appointmentRepo: Repository<Appointment>,
     @InjectRepository(TimeSlot)
@@ -22,7 +24,12 @@ export class AppointmentService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
   ) {}
-
+ async findByDate(date: string) {
+    return this.appointmentRepo.find({
+      where: { date },
+      relations: ['patient', 'medecin', 'timeSlot'],
+    });
+  }
   /**
    * Créer un nouveau rendez-vous
    * Vérifie que le médecin existe, que le créneau est libre, pas déjà réservé
@@ -171,20 +178,15 @@ export class AppointmentService {
    * Le médecin enregistre le diagnostic et les médicaments prescrits
    * Passe le statut à "terminé"
    */
-
 async complete(id: number, diagnostic: string, medicaments: string) {
   const appointment = await this.appointmentRepo.findOne({
     where: { id },
     relations: ['patient', 'medecin', 'timeSlot'],
   });
 
-  if (!appointment) {
-    throw new NotFoundException('RDV non trouvé');
-  }
-
-  if (appointment.status === AppointmentStatus.COMPLETED) {
+  if (!appointment) throw new NotFoundException('RDV non trouvé');
+  if (appointment.status === AppointmentStatus.COMPLETED)
     throw new BadRequestException('Consultation déjà terminée');
-  }
 
   appointment.status = AppointmentStatus.COMPLETED;
   appointment.diagnostic = diagnostic;
@@ -192,6 +194,9 @@ async complete(id: number, diagnostic: string, medicaments: string) {
 
   const saved = await this.appointmentRepo.save(appointment);
 
-  return saved; // On renvoie tout simplement l'objet mis à jour
+  // === CREATE BILL AUTOMATICALLY ===
+  await this.billService.createFromAppointment(saved.id);
+
+  return saved;
 }
 }
