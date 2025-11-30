@@ -1,4 +1,3 @@
-// src/components/patient/MyAppointments.jsx
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -111,7 +110,7 @@ const downloadBill = async (apt) => {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
 
-    // Use frontend appointment data to show names
+    
     doc.text(`Patient : ${apt.patient.name}`, 20, 40);
     doc.text(`Docteur : Dr. ${apt.medecin.name}`, 20, 50);
     doc.text(`Date de consultation : ${format(new Date(apt.date), "dd/MM/yyyy")}`, 20, 60);
