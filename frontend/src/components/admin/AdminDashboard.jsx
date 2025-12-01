@@ -6,7 +6,7 @@ export default function AdminDashboard() {
       <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1e40af" }}>
         Dashboard Admin
       </Typography>
-      {/* Ajoutez ici vos widgets ou données spécifiques */}
+      
     </Container>
   );
 }

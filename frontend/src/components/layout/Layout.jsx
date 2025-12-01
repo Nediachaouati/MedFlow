@@ -17,7 +17,7 @@ export default function Layout({ role, children, showSidebar = true }) {
           p: 0,
         }}
       >
-        {showSidebar && <Navbar role={role} />} {/* Rendu conditionnel de Navbar */}
+        {showSidebar && <Navbar role={role} />} 
 
         <Box
           component="main"

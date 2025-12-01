@@ -46,7 +46,7 @@ export class Appointment {
 @OneToMany(() => Bill, (bill) => bill.appointment)
 bill: Bill[];
 
-  // Relations
+  
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'medecinId' })
   medecin: User;

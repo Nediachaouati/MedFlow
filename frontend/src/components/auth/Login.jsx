@@ -13,7 +13,7 @@ import {
   Paper,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import BackgroundImage from "../../assets/clinique.jpg"; // Chemin ajusté
+import BackgroundImage from "../../assets/clinique.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,27 +21,56 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post("http://localhost:3000/auth/login", { email, password });
-      localStorage.setItem("token", res.data.access_token);
-      localStorage.setItem("role", res.data.role || ""); 
-      if (res.data.role === "ADMIN") {
-        navigate("/admin");
-      }  else if (res.data.role === "RECEPTIONNISTE") {
-        navigate("/receptionist");
-      } else if (res.data.role === "MEDECIN") {
-        navigate("/doctor/dashboard"); 
-      }else if (res.data.role === "PATIENT") {
-        navigate("/patient/dashboard"); 
-      }else {
-        navigate("/"); 
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || "Erreur de connexion");
+ const handleLogin = async (e) => {
+  e.preventDefault();
+  setError("");
+
+  try {
+    const res = await axios.post("http://localhost:3000/auth/login", {
+      email,
+      password,
+    });
+
+    console.log("Réponse complète du backend :", res.data); 
+
+    
+    const userData = {
+      id: res.data.id || res.data.user?.id,
+      email: res.data.email || res.data.user?.email,
+      role: res.data.role || res.data.user?.role,
+      name: res.data.name || res.data.user?.name || res.data.email,
+    };
+
+    // Si aucun rôle 
+    if (!userData.role) {
+      setError("Rôle utilisateur non trouvé dans la réponse");
+      return;
     }
-  };
+
+    // Stockage 
+    localStorage.setItem("userData", JSON.stringify(userData));
+    localStorage.setItem("token", res.data.access_token);
+
+    // Redirection 
+    setTimeout(() => {
+      if (userData.role === "ADMIN") {
+        window.location.replace("/admin/doctors");
+      } else if (userData.role === "RECEPTIONNISTE") {
+        window.location.replace("/receptionist/dashboard");
+      } else if (userData.role === "MEDECIN") {
+        window.location.replace("/doctor/availability");
+      } else if (userData.role === "PATIENT") {
+        window.location.replace("/patient/dashboard");
+      } else {
+        window.location.replace("/");
+      }
+    }, 100);
+
+  } catch (err) {
+    console.error("Erreur login :", err.response?.data);
+    setError(err.response?.data?.message || "Email ou mot de passe incorrect");
+  }
+};
 
   return (
     <Container disableGutters maxWidth={false}>
@@ -84,6 +113,7 @@ export default function Login() {
         >
           MedFlow
         </Typography>
+
         <Paper
           elevation={6}
           sx={{
@@ -110,6 +140,7 @@ export default function Login() {
               borderRadius: { xs: "8px 8px 0 0", md: "8px 0 0 8px" },
             }}
           />
+
           <Box
             sx={{
               display: "flex",
@@ -125,11 +156,13 @@ export default function Login() {
             <Typography component="h1" variant="h5">
               Connexion à MedFlow
             </Typography>
+
             {error && (
               <Typography color="error" variant="body2" sx={{ mt: 1 }}>
                 {error}
               </Typography>
             )}
+
             <Box component="form" onSubmit={handleLogin} sx={{ mt: 1, width: "100%" }}>
               <TextField
                 margin="normal"
@@ -159,6 +192,7 @@ export default function Login() {
                 variant="outlined"
                 sx={{ p: 1, py: 1.5, fontSize: "0.9rem", "& .MuiOutlinedInput-root": { borderRadius: 1 } }}
               />
+
               <Button
                 type="submit"
                 fullWidth
@@ -168,6 +202,7 @@ export default function Login() {
               >
                 Se connecter
               </Button>
+
               <Grid container>
                 <Grid item>
                   <a href="/register" style={{ color: "#1976d2" }}>

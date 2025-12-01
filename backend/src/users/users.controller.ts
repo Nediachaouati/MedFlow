@@ -52,7 +52,7 @@ export class UsersController {
     return this.usersService.findById(user.id);
   }
 
-  //Liste des médecins (pour patients)
+  //Liste des médecins 
   @Get()
 @Roles(Role.PATIENT, Role.RECEPTIONNISTE, Role.ADMIN)
 async findByRole(@Query('role') role: string) {

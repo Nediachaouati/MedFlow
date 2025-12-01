@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bill } from './entities/bill.entity';
@@ -14,19 +18,19 @@ export class BillService {
     private appointmentRepo: Repository<Appointment>,
   ) {}
 
-
-async getBillByAppointment(appointmentId: number) {
-    const bill = await this.billRepo
-      .createQueryBuilder('bill')
-      .where('bill.appointmentId = :appointmentId', { appointmentId })
-      .getOne();
+  async getBillByAppointment(appointmentId: number) {
+    const bill = await this.billRepo.findOne({
+      where: { appointment: { id: appointmentId } },
+      relations: ['patient', 'appointment'],
+    });
 
     if (!bill) {
-      throw new NotFoundException('Bill not found for this appointment');
+      throw new NotFoundException('Facture non trouvée pour ce rendez-vous');
     }
 
     return bill;
   }
+
   async createFromAppointment(appointmentId: number) {
     const appointment = await this.appointmentRepo.findOne({
       where: { id: appointmentId },
@@ -45,9 +49,9 @@ async getBillByAppointment(appointmentId: number) {
       PEDIATRE: 25,
     };
 
-const speciality = appointment.medecin.speciality?.toUpperCase() || 'GENERALISTE';
-const price = specialityPrice[speciality] ?? 30;
-
+    const speciality =
+      appointment.medecin.speciality?.toUpperCase() || 'GENERALISTE';
+    const price = specialityPrice[speciality] ?? 30;
 
     const bill = this.billRepo.create({
       patient: appointment.patient,
@@ -68,4 +72,16 @@ const price = specialityPrice[speciality] ?? 30;
   findOne(id: number) {
     return this.billRepo.findOne({ where: { id } });
   }
+
+
+async markAsPaid(billId: number) {
+  const bill = await this.billRepo.findOne({ where: { id: billId } });
+  if (!bill) throw new NotFoundException('Facture non trouvée');
+  if (bill.status === 'PAID') return { message: 'Facture déjà payée' };
+
+  bill.status = 'PAID';
+  await this.billRepo.save(bill);
+
+  return { message: 'Facture marquée comme payée avec succès', bill };
+}
 }

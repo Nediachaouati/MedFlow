@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
@@ -18,25 +19,43 @@ export default function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("userData"); 
     localStorage.removeItem("role");
-    navigate("/");
+    window.location.replace("/login"); 
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const savedRole = localStorage.getItem("role");
-    if (!token) return;
+    if (!token) {
+      setRole("");
+      setUserName("");
+      return;
+    }
 
-    setRole(savedRole);
+    
+    try {
+      const userData = localStorage.getItem("userData");
+      if (userData && userData !== "undefined") {
+        const user = JSON.parse(userData);
+        setRole(user.role || "");
+      }
+    } catch (err) {
+      console.error("Erreur parsing userData", err);
+    }
 
+    
     const fetchUser = async () => {
       try {
         const res = await axios.get("http://localhost:3000/users/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUserName(res.data.name);
+        setUserName(res.data.name || "Utilisateur");
       } catch (err) {
-        console.error(err);
+        console.error("Erreur récupération profil :", err);
+        
+        if (err.response?.status === 401) {
+          handleLogout();
+        }
       }
     };
 
@@ -47,21 +66,17 @@ export default function Navbar() {
     <AppBar
       position="fixed"
       sx={{
-        width: "calc(100% - 240px)",
-        ml: "240px",
+        width: { sm: "100%", md: "calc(100% - 240px)" },
+        ml: { md: "240px" },
         backgroundColor: "#4A90E2",
         boxShadow: "none",
         height: "64px",
         justifyContent: "center",
+        zIndex: 1200,
       }}
     >
-      <Toolbar
-        sx={{
-          justifyContent: "space-between",
-          minHeight: "64px",
-          px: 2,
-        }}
-      >
+      <Toolbar sx={{ justifyContent: "space-between", minHeight: "64px", px: 2 }}>
+        
         <Typography
           variant="h6"
           component={Link}
@@ -70,21 +85,22 @@ export default function Navbar() {
             color: "white",
             textDecoration: "none",
             fontWeight: "bold",
-            "&:hover": { color: "#bbdefb" },
-            fontSize: "1.2rem",
+            fontSize: "1.4rem",
           }}
         >
-          MedFlow
+          
         </Typography>
 
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          {!role && (
+        
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          {!role ? (
             <>
               <Button
                 component={Link}
                 to="/login"
                 sx={{
                   color: "white",
+                  fontWeight: "500",
                   "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
                 }}
               >
@@ -95,32 +111,37 @@ export default function Navbar() {
                 to="/register"
                 sx={{
                   color: "white",
+                  fontWeight: "500",
                   "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
                 }}
               >
                 S'inscrire
               </Button>
             </>
-          )}
-
-          {role && userName && (
+          ) : (
             <>
               <Button
                 component={Link}
                 to="/profile"
                 sx={{
                   color: "white",
+                  fontWeight: "600",
+                  textTransform: "none",
+                  fontSize: "1.1rem",
                   "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
                 }}
               >
-                {userName}
+                {userName || "Chargement..."}
               </Button>
               <IconButton
-                color="inherit"
                 onClick={handleLogout}
-                sx={{ "&:hover": { color: "#f44336" }, p: 0.5 }}
+                sx={{
+                  color: "white",
+                  "&:hover": { color: "#f44336", bgcolor: "rgba(255,0,0,0.1)" },
+                  borderRadius: 2,
+                }}
               >
-                <LogoutIcon sx={{ fontSize: 20 }} />
+                <LogoutIcon sx={{ fontSize: 22 }} />
               </IconButton>
             </>
           )}

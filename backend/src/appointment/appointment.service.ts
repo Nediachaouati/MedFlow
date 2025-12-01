@@ -5,18 +5,21 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, Not, In } from 'typeorm';
 import { Appointment } from './entities/appointment.entity';
 import { TimeSlot } from '../availability/entities/time-slot.entity';
 import { User } from '../users/entities/user.entity';
 import { AppointmentStatus } from './entities/appointment.entity';
 import { Role } from '../role.enum';
 import { BillService } from 'src/bill/bill.service';
+import { Bill } from 'src/bill/entities/bill.entity';
 
 @Injectable()
 export class AppointmentService {
   constructor(
     private billService: BillService,
+    @InjectRepository(Bill)
+    private billRepo: Repository<Bill>,
     @InjectRepository(Appointment)
     private appointmentRepo: Repository<Appointment>,
     @InjectRepository(TimeSlot)
@@ -24,6 +27,9 @@ export class AppointmentService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
   ) {}
+
+
+  
  async findByDate(date: string) {
     return this.appointmentRepo.find({
       where: { date },
@@ -105,8 +111,8 @@ export class AppointmentService {
     relations: [
       'patient',
       'medecin',
-      'timeSlot',           // INDISPENSABLE
-      'timeSlot.availability', // au cas où
+      'timeSlot',           
+      'timeSlot.availability', 
     ],
   });
 
@@ -116,9 +122,6 @@ export class AppointmentService {
 
   return appointment;
 }
-
-
-
 
 
   async findByDoctorAndDate(medecinId: number, date: string) {
@@ -132,7 +135,7 @@ export class AppointmentService {
 
 /**
    * Annuler un rendez-vous
-   * - Vérifie que c'est bien le patient ou le médecin
+   * - Vérifie que c'est bien le patient 
    * - Interdit l'annulation si < 24h avant le RDV
    * - Remet le créneau en "disponible"
    */
@@ -151,7 +154,7 @@ export class AppointmentService {
     throw new BadRequestException('RDV déjà annulé');
   }
 
-  // NOUVEAU : VÉRIFICATION DES 24H
+  
   const appointmentDateTime = new Date(`${appointment.date}T${appointment.timeSlot.startTime}`);
   const now = new Date();
   const hoursDiff = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -185,18 +188,82 @@ async complete(id: number, diagnostic: string, medicaments: string) {
   });
 
   if (!appointment) throw new NotFoundException('RDV non trouvé');
-  if (appointment.status === AppointmentStatus.COMPLETED)
-    throw new BadRequestException('Consultation déjà terminée');
 
+  if (appointment.status === AppointmentStatus.COMPLETED) {
+    throw new BadRequestException('Consultation déjà terminée');
+  }
+
+  // On marque comme terminé
   appointment.status = AppointmentStatus.COMPLETED;
   appointment.diagnostic = diagnostic;
   appointment.medicaments = medicaments;
 
   const saved = await this.appointmentRepo.save(appointment);
 
-  // === CREATE BILL AUTOMATICALLY ===
+  
   await this.billService.createFromAppointment(saved.id);
 
   return saved;
+}
+
+
+async finishAndGenerateBill(id: number) {
+  const appointment = await this.appointmentRepo.findOne({
+    where: { id },
+    relations: ['patient', 'medecin'],
+  });
+
+  if (!appointment) {
+    throw new NotFoundException('Rendez-vous non trouvé');
+  }
+
+  
+  if (appointment.status === AppointmentStatus.COMPLETED) {
+    return { message: 'Rendez-vous déjà terminé', appointment };
+  }
+
+  appointment.status = AppointmentStatus.COMPLETED;
+  await this.appointmentRepo.save(appointment);
+
+  // On génère la facture UNIQUEMENT si elle n'existe pas déjà
+  const existingBill = await this.billRepo.findOne({
+    where: { appointment: { id } },
+  });
+
+  if (!existingBill) {
+    await this.billService.createFromAppointment(appointment.id);
+  }
+
+  return {
+    message: 'Rendez-vous terminé et facture générée avec succès !',
+    appointment,
+  };
+}
+
+async findByDateWithBills(date: string) {
+  return this.appointmentRepo.find({
+    where: { date },
+    relations: ['patient', 'medecin', 'timeSlot', 'bill'], 
+  });
+}
+
+async getAvailableSlots(medecinId: number, date: string) {
+  const slots = await this.timeSlotRepo.find({
+    where: { medecinId, date },
+    order: { startTime: 'ASC' },
+  });
+
+  const bookedSlotIds = await this.appointmentRepo
+    .find({
+      where: {
+        medecinId,
+        date,
+        status: Not(In(['annulé', 'CANCELLED'])), 
+      },
+      select: ['timeSlotId'],
+    })
+    .then(apps => apps.map(a => a.timeSlotId));
+
+  return slots.filter(slot => !bookedSlotIds.includes(slot.id));
 }
 }

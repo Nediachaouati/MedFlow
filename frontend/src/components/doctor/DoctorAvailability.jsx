@@ -24,7 +24,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit"; // Icône de modification
+import EditIcon from "@mui/icons-material/Edit"; 
 import axios from "axios";
 
 export default function DoctorAvailability() {
@@ -32,11 +32,11 @@ export default function DoctorAvailability() {
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [status, setStatus] = useState("disponible"); // Statut par défaut
+  const [status, setStatus] = useState("disponible"); 
   const [availabilities, setAvailabilities] = useState([]);
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
-  const [editOpen, setEditOpen] = useState(false); // Contrôle la modale d'édition
-  const [selectedAvailability, setSelectedAvailability] = useState(null); // Disponibilité à modifier
+  const [editOpen, setEditOpen] = useState(false); 
+  const [selectedAvailability, setSelectedAvailability] = useState(null); 
 
   // Récupérer les disponibilités existantes
   useEffect(() => {

@@ -1,4 +1,3 @@
-// src/pages/ReceptionistDashboard.jsx
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -12,32 +11,26 @@ import {
   Button,
   Snackbar,
   Alert,
+  Chip,
 } from "@mui/material";
 import axios from "axios";
 
 export default function ReceptionistDashboard() {
   const [appointments, setAppointments] = useState([]);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().slice(0, 10));
-  const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
 
   const token = localStorage.getItem("token");
 
-  // Fetch appointments for selected date
   const fetchAppointments = async (date) => {
-    setLoading(true);
     try {
-      const res = await axios.get(
-        `http://localhost:3000/appointments?date=${date}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.get(`http://localhost:3000/appointments/with-bills?date=${date}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setAppointments(res.data || []);
     } catch (err) {
-      console.error("Erreur chargement RDV :", err);
-      setAlert({ open: true, message: "Erreur chargement rendez-vous", severity: "error" });
+      setAlert({ open: true, message: "Erreur chargement RDV", severity: "error" });
       setAppointments([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -48,29 +41,44 @@ export default function ReceptionistDashboard() {
   const handleCompleteAppointment = async (appointmentId) => {
     try {
       await axios.put(
-        `http://localhost:3000/appointments/${appointmentId}/complete`,
-        {}, // backend handles bill creation
+        `http://localhost:3000/appointments/${appointmentId}/finish-and-bill`,
+        {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setAlert({ open: true, message: "Rendez-vous terminé et facture générée", severity: "success" });
-      fetchAppointments(filterDate); // refresh table
+      setAlert({ open: true, message: "Rendez-vous terminé et facture générée !", severity: "success" });
+      fetchAppointments(filterDate);
     } catch (err) {
-      console.error("Erreur terminer RDV :", err);
       setAlert({ open: true, message: "Erreur lors de la finalisation", severity: "error" });
+    }
+  };
+
+  const handleMarkAsPaid = async (billId) => {
+    if (!window.confirm("Confirmer que le patient a payé cette facture ?")) return;
+
+    try {
+      await axios.put(
+        `http://localhost:3000/bill/${billId}/pay`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAlert({ open: true, message: "Paiement enregistré avec succès !", severity: "success" });
+      fetchAppointments(filterDate);
+    } catch (err) {
+      setAlert({ open: true, message: "Erreur lors du paiement", severity: "error" });
     }
   };
 
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
 
   return (
-    <Box sx={{ p: 8 }}>
-      <Typography variant="h4" sx={{ mb: 4 }}>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h4" sx={{ mb: 4, fontWeight: "bold" }}>
         Dashboard Réceptionniste
       </Typography>
 
       <Box sx={{ mb: 3, display: "flex", gap: 2, alignItems: "center" }}>
         <TextField
-          label="Filtrer par date"
+          label="Date"
           type="date"
           value={filterDate}
           onChange={(e) => setFilterDate(e.target.value)}
@@ -81,12 +89,7 @@ export default function ReceptionistDashboard() {
         </Button>
       </Box>
 
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={5000}
-        onClose={handleCloseAlert}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
+      <Snackbar open={alert.open} autoHideDuration={4000} onClose={handleCloseAlert} anchorOrigin={{ vertical: "top", horizontal: "center" }}>
         <Alert onClose={handleCloseAlert} severity={alert.severity}>
           {alert.message}
         </Alert>
@@ -95,44 +98,78 @@ export default function ReceptionistDashboard() {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Patient</TableCell>
-            <TableCell>Médecin</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Créneau</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell><strong>Patient</strong></TableCell>
+            <TableCell><strong>Médecin</strong></TableCell>
+            <TableCell><strong>Date</strong></TableCell>
+            <TableCell><strong>Heure</strong></TableCell>
+            <TableCell><strong>Statut RDV</strong></TableCell>
+            <TableCell align="center"><strong>Actions & Paiement</strong></TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {appointments.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} align="center">
-                Aucun rendez-vous pour cette date
-              </TableCell>
+              <TableCell colSpan={6} align="center">Aucun rendez-vous</TableCell>
             </TableRow>
           ) : (
-            appointments.map((appt) => (
-              <TableRow key={appt.id}>
-                <TableCell>{appt.patient?.name || "N/A"}</TableCell>
-                <TableCell>{appt.medecin?.name || "N/A"}</TableCell>
-                <TableCell>{appt.date}</TableCell>
-                <TableCell>
-                  {appt.timeSlot?.startTime?.slice(0,5)} - {appt.timeSlot?.endTime?.slice(0,5)}
-                </TableCell>
-                <TableCell>{appt.status}</TableCell>
-                <TableCell>
-                  {appt.status !== "TERMINÉ" && (
-                    <Button
-                      variant="contained"
-                      color="success"
-                      onClick={() => handleCompleteAppointment(appt.id)}
-                    >
-                      Terminer
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
+            appointments.map((appt) => {
+              const isPending = appt.status !== "terminé" && appt.status !== "annulé";
+              const isCompleted = appt.status === "terminé";
+              const bill = appt.bill?.[0];
+
+              return (
+                <TableRow key={appt.id}>
+                  <TableCell>{appt.patient?.name || "N/A"}</TableCell>
+                  <TableCell>{appt.medecin?.name || "N/A"}</TableCell>
+                  <TableCell>{appt.date}</TableCell>
+                  <TableCell>
+                    {appt.timeSlot?.startTime?.slice(0, 5)} - {appt.timeSlot?.endTime?.slice(0, 5)}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={appt.status}
+                      color={
+                        appt.status === "terminé" ? "success" :
+                        appt.status === "annulé" ? "error" : "default"
+                      }
+                    />
+                  </TableCell>
+
+                  {/* actions */}
+                  <TableCell align="center">
+                    
+
+                    {/*  terminé :gestion facture */}
+                    {isCompleted && (
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center" }}>
+                        {bill ? (
+                          bill.status === "PAID" ? (
+                            <Chip label="Payée" color="success" variant="outlined" />
+                          ) : (
+                            <>
+                              <Chip label={`${bill.amount} DT - Non payée`} color="error" />
+                              <Button
+                                variant="contained"
+                                color="success"
+                                size="small"
+                                onClick={() => handleMarkAsPaid(bill.id)}
+                              >
+                                Marquer payée
+                              </Button>
+                            </>
+                          )
+                        ) : (
+                          <Chip label="Facture en cours..." color="warning" size="small" />
+                        )}
+                      </Box>
+                    )}
+
+                    
+                  
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

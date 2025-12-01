@@ -28,14 +28,14 @@ export class AvailabilityService {
 
     const availability = this.availabilityRepo.create({
       ...dto,
-      medecinId: Number(medecinId), // maintenant number
+      medecinId: Number(medecinId), 
       status: 'disponible',
     });
 
     const saved = await this.availabilityRepo.save(availability);
     await this.generateTimeSlots(saved);
 
-    return saved; // saved est bien un objet, pas un tableau
+    return saved; 
   }
 
   /** Génère les créneaux toutes les 20 minutes entre startTime et endTime */
@@ -49,7 +49,7 @@ export class AvailabilityService {
 
       const slot = this.timeSlotRepo.create({
         availabilityId: availability.id,
-        medecinId: availability.medecinId, // déjà number
+        medecinId: availability.medecinId, 
         date: availability.date,
         startTime,
         endTime,
@@ -86,34 +86,17 @@ export class AvailabilityService {
   }
 
 
-  /** Récupérer toutes les dates disponibles d'un médecin (pour le calendrier patient) */
+  /** Récupérer toutes les dates disponibles d'un médecin  */
   async findByMedecinId(medecinId: string): Promise<Availability[]> {
     return this.availabilityRepo.find({
       where: { medecinId: Number(medecinId) },
       order: { date: 'ASC' },
     });
   }
-/*
-  async getTimeSlotsByDate(medecinId: string, date: string): Promise<TimeSlot[]> {
-  const normalizedDate = date.substring(0, 10); // Toujours "YYYY-MM-DD"
-
-  return this.timeSlotRepo
-    .createQueryBuilder("slot")
-    .where("slot.medecinId = :medecinId", { medecinId: Number(medecinId) })
-    .andWhere("DATE(slot.date) = :date", { date: normalizedDate })
-    .orderBy("slot.startTime", "ASC")
-    .leftJoinAndSelect("slot.patient", "patient")
-    .getMany();
-}
-*/
-
-
 
 /**
-   * LA MÉTHODE LA PLUS IMPORTANTE
    * Récupère tous les créneaux d'une date pour un médecin
-   * Gère proprement les RDV annulés → les créneaux redeviennent libres
-   * Renvoie un objet propre et clair pour le frontend
+   * Gère les RDV annulés → les créneaux redeviennent libres
    */
 
 async getTimeSlotsByDate(medecinId: string, date: string): Promise<any[]> {
@@ -128,7 +111,6 @@ async getTimeSlotsByDate(medecinId: string, date: string): Promise<any[]> {
     .orderBy('slot.startTime', 'ASC')
     .getMany();
 
-  // on tient compte du statut "annulé"
   return slots.map(slot => {
     // Si le RDV existe mais est annulé → on force "disponible"
     if (slot.appointment && slot.appointment.status === 'annulé') {
@@ -136,11 +118,10 @@ async getTimeSlotsByDate(medecinId: string, date: string): Promise<any[]> {
         ...slot,
         status: 'disponible',
         patient: null,
-        appointment: null, // on cache complètement le RDV annulé
+        appointment: null, 
       };
     }
 
-    // Sinon : comportement normal
     if (slot.appointment) {
       return {
         ...slot,
@@ -153,7 +134,6 @@ async getTimeSlotsByDate(medecinId: string, date: string): Promise<any[]> {
       };
     }
 
-    // Créneau libre
     return {
       ...slot,
       status: 'disponible',
@@ -164,7 +144,7 @@ async getTimeSlotsByDate(medecinId: string, date: string): Promise<any[]> {
 }
 
 
-/** Modifier une disponibilité → supprime et régénère tous les créneaux */
+/** Modifier une disponibilité : supprime et régénère tous les créneaux */
 async update(id: number, body: any, medecinId: string) {
     const avail = await this.availabilityRepo.findOneOrFail({ where: { id } });
     if (avail.medecinId !== Number(medecinId)) {

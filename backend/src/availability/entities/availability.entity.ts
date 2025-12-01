@@ -11,16 +11,16 @@ export class Availability {
   medecinId: number;
 
   @Column()
-  day: string; // Ex. "Lundi"
+  day: string; 
 
   @Column({ type: 'date' })  
   date: string;
 
   @Column()
-  startTime: string; // Ex. "09:00"
+  startTime: string;
 
   @Column()
-  endTime: string; // Ex. "17:00"
+  endTime: string; 
 
   @Column({
     type: 'enum',

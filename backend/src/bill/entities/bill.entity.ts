@@ -19,7 +19,7 @@ export class Bill {
   totalAmount: number; 
 
   @Column({ default: 'UNPAID' })
-  status: string;
+  status: 'UNPAID' | 'PAID';
 
   @CreateDateColumn()
   createdAt: Date;

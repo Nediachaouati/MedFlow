@@ -1,4 +1,3 @@
-// src/pages/doctor/DoctorCalendar.jsx → VERSION 100% FONCTIONNELLE
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -72,7 +71,7 @@ export default function DoctorCalendar() {
     }
   }, [date]);
 
-  // CETTE PARTIE MANQUAIT → FERME LE MODAL QUAND LA CONSULTATION EST TERMINÉE
+  // modal fermé quand le consultation terminé
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data === "consultation-closed") {
@@ -91,12 +90,12 @@ export default function DoctorCalendar() {
   const handleCloseModal = () => {
     setOpenModal(false);
     setSelectedAppointment(null);
-    fetchSlots(); // Rafraîchit l'agenda → le créneau passe en "terminé"
+    fetchSlots(); 
   };
 
   return (
     <>
-      {/* TON AGENDA ICI (inchangé) */}
+      
       <Paper elevation={3} sx={{ p: 4, maxWidth: 1300, mx: "auto", borderRadius: 3 }}>
         <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
           Mon Agenda Médical
@@ -187,7 +186,7 @@ export default function DoctorCalendar() {
         )}
       </Paper>
 
-      {/* MODAL */}
+      
       <Dialog open={openModal} onClose={handleCloseModal} maxWidth="lg" fullWidth>
         <DialogTitle>Consultation en cours</DialogTitle>
         <DialogContent dividers>

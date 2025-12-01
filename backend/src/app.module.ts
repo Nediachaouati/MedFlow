@@ -13,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { AppointmentModule } from './appointment/appointment.module';
 import { BillModule } from './bill/bill.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -54,7 +55,7 @@ import { BillModule } from './bill/bill.module';
       synchronize: true,
     }),
     
-     AuthModule, UsersModule, AvailabilityModule, AppointmentModule, BillModule,],
+     AuthModule, UsersModule, AvailabilityModule, AppointmentModule, BillModule, ChatModule,],
   controllers: [AppController],
   providers: [
     AppService,{

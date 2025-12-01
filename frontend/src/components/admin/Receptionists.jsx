@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Typography, Container, Button, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, Box } from "@mui/material"; // Ajout de Box explicitement
 import { useNavigate } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline"; // Icône plus jolie pour ajouter
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline"; 
 import axios from "axios";
 
 export default function Receptionists() {
@@ -12,11 +12,11 @@ export default function Receptionists() {
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", password: "" });
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
 
-  // Récupérer la liste des réceptionnistes depuis l'API
+  // Récupérer la liste des réceptionnistes 
   useEffect(() => {
     const fetchReceptionists = async () => {
       try {
-        const token = localStorage.getItem("token"); // Supposons que le token est stocké ici
+        const token = localStorage.getItem("token"); 
         const response = await axios.get("http://localhost:3000/users?role=RECEPTIONNISTE", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -29,12 +29,12 @@ export default function Receptionists() {
     fetchReceptionists();
   }, []);
 
-  // Gérer les changements dans le formulaire
+  
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Ajouter un réceptionniste via l'API
+  // Ajouter un réceptionniste 
   const handleAddReceptionist = async () => {
     setOpenForm(true);
   };
@@ -50,13 +50,13 @@ export default function Receptionists() {
           name: fullName,
           email: formData.email,
           password: formData.password,
-          phoneNumber: "", // Optionnel, à ajouter si nécessaire
-          address: "",    // Optionnel, à ajouter si nécessaire
-          birthDate: null // Optionnel, à ajouter si nécessaire
+          phoneNumber: "", 
+          address: "",   
+          birthDate: null 
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setReceptionists([...receptionists, { id: Date.now(), name: fullName, email: formData.email }]); // Mise à jour locale temporaire
+      setReceptionists([...receptionists, { id: Date.now(), name: fullName, email: formData.email }]); 
       setAlert({ open: true, message: "Réceptionniste ajouté avec succès !", severity: "success" });
       setOpenForm(false);
       setFormData({ firstName: "", lastName: "", email: "", password: "" });
@@ -71,7 +71,7 @@ export default function Receptionists() {
     if (window.confirm("Voulez-vous supprimer ce réceptionniste ?")) {
       try {
         const token = localStorage.getItem("token");
-        await axios.delete(`http://localhost:3000/users/${id}`, {
+        await axios.delete(`http://localhost:3000/users/admin/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setReceptionists(receptionists.filter((receptionist) => receptionist.id !== id));
@@ -83,7 +83,7 @@ export default function Receptionists() {
     }
   };
 
-  // Fermer l'alerte manuellement
+  // Fermer l'alerte 
   const handleCloseAlert = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -93,13 +93,13 @@ export default function Receptionists() {
 
   return (
     <Container sx={{ mt: 4, mb: 4, p: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: "bold", color: "black", mb: 2, mt: 6 }}> {/* Décalage vers le bas avec mt: 6 */}
+      <Typography variant="h4" sx={{ fontWeight: "bold", color: "black", mb: 2, mt: 6 }}> 
         Liste des Réceptionnistes
       </Typography>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}> {/* Bouton à droite */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}> 
         <Button
           variant="contained"
-          color="success" // Couleur verte
+          color="success" 
           startIcon={<AddCircleOutlineIcon />}
           onClick={handleAddReceptionist}
           sx={{ mb: 2 }}
@@ -109,7 +109,7 @@ export default function Receptionists() {
       </Box>
       <Snackbar
         open={alert.open}
-        autoHideDuration={5000} // 5 secondes
+        autoHideDuration={5000} 
         onClose={handleCloseAlert}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >

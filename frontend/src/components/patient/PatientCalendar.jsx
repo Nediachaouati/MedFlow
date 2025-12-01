@@ -66,7 +66,7 @@ export default function PatientCalendar({ medecinId, medecinName }) {
 
       setAlert({ open: true, message: "Rendez-vous réservé avec succès !", severity: "success" });
       setOpenConfirm(false);
-      fetchSlots(); // rafraîchit les créneaux
+      fetchSlots(); 
     } catch (err) {
       const msg = err.response?.data?.message || "Erreur lors de la réservation";
       setAlert({ open: true, message: msg, severity: "error" });
@@ -79,7 +79,7 @@ export default function PatientCalendar({ medecinId, medecinName }) {
         Prendre rendez-vous avec Dr. {medecinName}
       </Typography>
 
-      {/* Sélecteur de date */}
+      
       <Box sx={{ mb: 3 }}>
         <input
           type="date"
@@ -134,7 +134,7 @@ export default function PatientCalendar({ medecinId, medecinName }) {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar pour les messages */}
+      
       <Snackbar
         open={alert.open}
         autoHideDuration={5000}

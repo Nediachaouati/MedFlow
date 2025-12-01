@@ -118,9 +118,7 @@ export default function Profile() {
 
         <Divider sx={{ my: 3 }} />
 
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
-          © 2025 Mon Application. Tous droits réservés.
-        </Typography>
+        
       </Paper>
     </Box>
   );

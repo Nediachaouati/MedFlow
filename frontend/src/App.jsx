@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import Home from "./components/auth/Home";
-import AdminDashboard from "./components/admin/AdminDashboard";
 import Doctors from "./components/admin/Doctors";
 import Receptionists from "./components/admin/Receptionists";
 import Layout from "./components/layout/Layout";
@@ -19,21 +18,48 @@ import MyAppointments from "./components/patient/MyAppointments";
 import ConsultationModal from "./components/doctor/ConsultationModal";
 import Profile from "./components/profile/Profile";
 
+import ProtectedAdmin from "./protectedRoutes/ProtectedAdmin";
+import ProtectedPatient from "./protectedRoutes/ProtectedPatient";
+import ProtectedReceptionniste from "./protectedRoutes/ProtectedReceptionniste";
+import ProtectedMedecin from "./protectedRoutes/ProtectedMedecin";
+import Unauthorized from "./pages/Unauthorized"
+
 
 function AppContent() {
   const [role, setRole] = useState(null);
   const location = useLocation();
 
-  useEffect(() => {
-    const storedRole = localStorage.getItem("role");
-    setRole(storedRole);
-  }, [location]);
+ 
+useEffect(() => {
+  try {
+    const userData = localStorage.getItem("userData");
+    
+    if (userData && userData !== "undefined" && userData !== "null") {
+      const user = JSON.parse(userData);
+      if (user && user.role) {
+        setRole(user.role);
+      } else {
+        setRole(null);
+      }
+    } else {
+      setRole(null);
+    }
+  } catch (err) {
+    console.error("Erreur lecture userData", err);
+    localStorage.removeItem("userData"); // Nettoie le storage 
+    setRole(null);
+  }
+}, [location]);
   
 
   return (
     <Routes>
+      {/* Pages publiques */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+
+      {/* home */}
       <Route
         path="/"
         element={
@@ -42,66 +68,80 @@ function AppContent() {
           </Layout>
         }
       />
+
+      {/* route ADMIN  */}
       <Route
         path="/admin/*"
         element={
-          <Layout role={role} showSidebar={true}>
-            <Routes>
-              <Route index element={<AdminDashboard />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="doctors" element={<Doctors />} />
-              <Route path="receptionists" element={<Receptionists />} />
-            </Routes>
-          </Layout>
+          <ProtectedAdmin>
+            <Layout role={role} showSidebar={true}>
+              <Routes>
+                <Route index element={<Doctors />} />
+                <Route path="doctors" element={<Doctors />} />
+                <Route path="receptionists" element={<Receptionists />} />
+              </Routes>
+            </Layout>
+          </ProtectedAdmin>
         }
       />
+
+      {/* route MÉDECIN  */}
       <Route
         path="/doctor/*"
         element={
-          <Layout role={role} showSidebar={true}>
-            <Routes>
-              <Route index element={<DoctorDashboard />} />
-              <Route path="dashboard" element={<DoctorDashboard />} />
-              <Route path="availability" element={<DoctorAvailability />} />
-              <Route path="calendar" element={<DoctorCalendar />} />
-          <Route path="consultation-modal/:id" element={<ConsultationModal />} />
-            </Routes>
-          </Layout>
+          <ProtectedMedecin>
+            <Layout role={role} showSidebar={true}>
+              <Routes>
+                <Route index element={<DoctorAvailability />} />
+                <Route path="availability" element={<DoctorAvailability />} />
+                <Route path="calendar" element={<DoctorCalendar />} />
+                <Route path="consultation-modal/:id" element={<ConsultationModal />} />
+              </Routes>
+            </Layout>
+          </ProtectedMedecin>
         }
       />
 
+      {/* route RÉCEPTIONNISTE  */}
       <Route
         path="/receptionist/*"
         element={
-          <Layout role={role} showSidebar={true}>
-            <Routes>
-              <Route index element={<ReceptionistDashboard />} /> {/* Page par défaut */}
-              <Route path="dashboard" element={<ReceptionistDashboard />} />
-              <Route path="patients" element={<ReceptionistPatients />} />
-            </Routes>
-          </Layout>
+          <ProtectedReceptionniste>
+            <Layout role={role} showSidebar={true}>
+              <Routes>
+                <Route index element={<ReceptionistDashboard />} />
+                <Route path="dashboard" element={<ReceptionistDashboard />} />
+                <Route path="patients" element={<ReceptionistPatients />} />
+              </Routes>
+            </Layout>
+          </ProtectedReceptionniste>
         }
       />
 
+      {/* route PATIENT  */}
       <Route
         path="/patient/*"
         element={
-          <Layout role={role} showSidebar={true}>
-            <Routes>
-              <Route index element={<PatientDashboard />} /> 
-              <Route path="dashboard" element={<PatientDashboard />} />
-              <Route path="rendezvous" element={<PatientRendezvous/>} />
-              <Route path="calendar/:medecinId/:medecinName" element={<PatientCalendar />} />
-              <Route path="appointments" element={<MyAppointments />} />
-            </Routes>
-          </Layout>
+          <ProtectedPatient>
+            <Layout role={role} showSidebar={true}>
+              <Routes>
+                <Route index element={<PatientDashboard />} />
+                <Route path="dashboard" element={<PatientDashboard />} />
+                <Route path="rendezvous" element={<PatientRendezvous />} />
+                <Route path="calendar/:medecinId/:medecinName" element={<PatientCalendar />} />
+                <Route path="appointments" element={<MyAppointments />} />
+              </Routes>
+            </Layout>
+          </ProtectedPatient>
         }
       />
+
+      {/* PROFIL  */}
       <Route
         path="/profile"
         element={
           <Layout role={role} showSidebar={true}>
-      <Profile />
+            <Profile />
           </Layout>
         }
       />

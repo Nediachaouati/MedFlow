@@ -48,7 +48,7 @@ export default function ReceptionistPatients() {
   const [rdvData, setRdvData] = useState({ medecinId: "", date: "", timeSlotId: "" });
   const [availableSlots, setAvailableSlots] = useState([]);
 
-  // CHARGER PATIENTS
+  // charger patient
   useEffect(() => {
     const fetchPatients = async () => {
       try {
@@ -68,7 +68,7 @@ export default function ReceptionistPatients() {
     fetchPatients();
   }, [navigate]);
 
-  // CHARGER MÉDECINS
+  // charger médcins
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -84,49 +84,37 @@ export default function ReceptionistPatients() {
     fetchDoctors();
   }, []);
 
-  // CHARGER CRÉNEAUX DISPONIBLES (ROUTE CORRIGÉE POUR RÉCEPTIONNISTE)
-  useEffect(() => {
-    if (!openRdvDialog || !rdvData.medecinId || !rdvData.date) {
+  // charger creneau dispo 
+useEffect(() => {
+  if (!openRdvDialog || !rdvData.medecinId || !rdvData.date) {
+    setAvailableSlots([]);
+    return;
+  }
+
+  const loadSlots = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `http://localhost:3000/appointments/available-slots?medecinId=${rdvData.medecinId}&date=${rdvData.date}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAvailableSlots(res.data);
+      console.log("Créneaux disponibles :", res.data);
+    } catch (err) {
+      console.error("Erreur chargement créneaux :", err.response?.status);
       setAvailableSlots([]);
-      return;
+      setAlert({
+        open: true,
+        message: "Impossible de charger les créneaux",
+        severity: "error",
+      });
     }
+  };
 
-    const loadSlots = async () => {
-      try {
-        const token = localStorage.getItem("token");
+  loadSlots();
+}, [rdvData.medecinId, rdvData.date, openRdvDialog]);
 
-        // ROUTE QUI MARCHE POUR RÉCEPTIONNISTE (évite le 403)
-        const res = await axios.get(
-          `http://localhost:3000/appointments/available-slots?medecinId=${rdvData.medecinId}&date=${rdvData.date}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const freeSlots = res.data || [];
-        console.log("Créneaux chargés :", freeSlots);
-        setAvailableSlots(freeSlots);
-      } catch (err) {
-        console.error("Erreur créneaux :", err.response?.status);
-        setAvailableSlots([]);
-        // Si la route n'existe pas encore, on fallback sur l'ancienne (au cas où)
-        if (err.response?.status === 404) {
-          try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get(
-              `http://localhost:3000/availability/slots?medecinId=${rdvData.medecinId}&date=${rdvData.date}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setAvailableSlots(res.data.filter(s => s.status === "disponible"));
-          } catch (fallbackErr) {
-            setAvailableSlots([]);
-          }
-        }
-      }
-    };
-
-    loadSlots();
-  }, [rdvData.medecinId, rdvData.date, openRdvDialog]);
-
-  // OUVRIR DIALOGUE RDV
+  // ouvrir dialogue rdv
   const handleOpenRdv = (patient) => {
     setSelectedPatient(patient);
     setRdvData({ medecinId: "", date: "", timeSlotId: "" });
@@ -134,7 +122,7 @@ export default function ReceptionistPatients() {
     setOpenRdvDialog(true);
   };
 
-  // PRENDRE LE RDV → CORRIGÉ (URL + BODY)
+  // prend rvd
   const handleBookRdv = async () => {
     if (!rdvData.medecinId || !rdvData.date || !rdvData.timeSlotId) {
       setAlert({ open: true, message: "Tous les champs sont requis", severity: "warning" });
@@ -145,9 +133,9 @@ export default function ReceptionistPatients() {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        "http://localhost:3000/appointments/add", // URL CORRECTE
+        "http://localhost:3000/appointments/add", 
         {
-          patientId: selectedPatient.id,        // AJOUTE ÇA
+          patientId: selectedPatient.id,        
           medecinId: Number(rdvData.medecinId),
           timeSlotId: Number(rdvData.timeSlotId),
           date: rdvData.date,
@@ -163,7 +151,7 @@ export default function ReceptionistPatients() {
     }
   };
 
-  // AJOUT / SUPPRESSION PATIENT
+  // ajout + supp PATIENT
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
   const handleAddPatient = () => setOpenForm(true);
 

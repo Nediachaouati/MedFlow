@@ -24,7 +24,7 @@ import { User } from '../users/entities/user.entity';
 export class AvailabilityController {
   constructor(private readonly availabilityService: AvailabilityService) {}
 
-  /** Médecin ajoute une nouvelle plage horaire (ex: 09:00–17:00) */
+  /** Médecin ajoute une nouvelle plage horaire  */
   @Post('add')
   @Roles(Role.MEDECIN)
   create(@Body() body: any, @Request() req: { user: User }) {
@@ -46,21 +46,8 @@ export class AvailabilityController {
     return this.availabilityService.findByMedecinId(medecinId);
   }
 
-  // NOUVELLE ROUTE PROPRE ET SÉCURISÉE
-/*@Get('doctor/slots/:date')
-@Roles(Role.MEDECIN)
-async getDoctorSlots(
-  @Param('date') date: string,
-  @Request() req: any,
-) {
-  return this.availabilityService.getTimeSlotsByDate(req.user.id.toString(), date);
-}*/
-
-
 /**
-   * NOUVELLE ROUTE PROPRE POUR LE MÉDECIN
-   * Ex: GET /availability/doctor/slots/2025-11-22
-   * → Renvoie tous les créneaux du jour pour le médecin connecté
+   *  Renvoie tous les créneaux du jour pour le médecin connecté
    */
 @Get('doctor/slots/:date')
 @Roles(Role.MEDECIN)
@@ -71,7 +58,7 @@ async getDoctorSlots(
   return this.availabilityService.getTimeSlotsByDate(req.user.id.toString(), date);
 }
 
-/** Route classique pour patient/réceptionniste : voir créneaux d'un médecin */
+/**  voir créneaux d'un médecin */
   @Get('slots')
   @Roles(Role.PATIENT, Role.MEDECIN, Role.RECEPTIONNISTE)
   async getSlots(@Query('medecinId') medecinId: string, @Query('date') date: string) {
@@ -89,7 +76,7 @@ async getDoctorSlots(
     @Request() req: { user: User },
   ) {
     const availability = await this.availabilityService.findOne(+id);
-    // COMPARAISON CORRECTE : number === number
+    
     if (availability.medecinId !== req.user.id) {
       throw new ForbiddenException('Accès refusé.');
     }
@@ -97,12 +84,11 @@ async getDoctorSlots(
   }
 
 
-  /** Supprimer une disponibilité (soft delete) */
+  /** Supprimer une disponibilité */
   @Delete(':id')
   @Roles(Role.MEDECIN)
   async remove(@Param('id') id: string, @Request() req: { user: User }) {
     const availability = await this.availabilityService.findOne(+id);
-    // COMPARAISON CORRECTE
     if (availability.medecinId !== req.user.id) {
       throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer cette disponibilité.');
     }

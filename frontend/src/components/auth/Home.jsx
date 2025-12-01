@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom"; // Ajout de Link
+import { useNavigate, Link } from "react-router-dom"; 
 import {
   Box,
   Typography,
@@ -36,7 +36,7 @@ export default function Home() {
         sx={{
           width: "100%",
           ml: 0,
-          backgroundColor: "rgba(21, 6, 160, 0.7)", // Couleur fixe, même pour connecté
+          backgroundColor: "rgba(21, 6, 160, 0.7)", 
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
           height: "64px",
           justifyContent: "center",
@@ -150,7 +150,7 @@ export default function Home() {
         </Toolbar>
       </AppBar>
 
-      {/* --- Image de fond plein écran --- */}
+      
       <CssBaseline />
       <Box
         sx={{

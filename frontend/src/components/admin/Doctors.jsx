@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Typography, Container, Button, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, Box } from "@mui/material"; // Explicitement inclus Box
 import { useNavigate } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline"; // Icône plus jolie pour ajouter
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline"; 
 import axios from "axios";
 
 export default function Doctors() {
@@ -12,11 +12,11 @@ export default function Doctors() {
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", password: "",speciality: "" });
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
 
-  // Récupérer la liste des médecins depuis l'API
+  // Récupérer la liste des médecins 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const token = localStorage.getItem("token"); // Supposons que le token est stocké ici
+        const token = localStorage.getItem("token"); 
         const response = await axios.get("http://localhost:3000/users?role=MEDECIN", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -29,12 +29,12 @@ export default function Doctors() {
     fetchDoctors();
   }, []);
 
-  // Gérer les changements dans le formulaire
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Ajouter un médecin via l'API
+  // Ajouter un médecin
   const handleAddDoctor = async () => {
     setOpenForm(true);
   };
@@ -57,7 +57,7 @@ export default function Doctors() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setDoctors([...doctors, { id: Date.now(), name: fullName, email: formData.email }]); // Mise à jour locale temporaire
+      setDoctors([...doctors, { id: Date.now(), name: fullName, email: formData.email }]); 
       setAlert({ open: true, message: "Médecin ajouté avec succès !", severity: "success" });
       setOpenForm(false);
       setFormData({ firstName: "", lastName: "", email: "", password: "" , speciality: ""  });
@@ -72,7 +72,7 @@ export default function Doctors() {
     if (window.confirm("Voulez-vous supprimer ce médecin ?")) {
       try {
         const token = localStorage.getItem("token");
-        await axios.delete(`http://localhost:3000/users/${id}`, {
+        await axios.delete(`http://localhost:3000/users/admin/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDoctors(doctors.filter((doctor) => doctor.id !== id));
@@ -84,7 +84,7 @@ export default function Doctors() {
     }
   };
 
-  // Fermer le toast manuellement
+  // Fermer le toast 
   const handleCloseAlert = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -94,13 +94,13 @@ export default function Doctors() {
 
   return (
     <Container sx={{ mt: 4, mb: 4, p: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: "bold", color: "black", mb: 2, mt: 6 }}> {/* Décalage vers le bas avec mt: 6 */}
+      <Typography variant="h4" sx={{ fontWeight: "bold", color: "black", mb: 2, mt: 6 }}> 
         Liste des Médecins
       </Typography>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}> {/* Bouton à droite */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}> 
         <Button
           variant="contained"
-          color="success" // Couleur verte
+          color="success" 
           startIcon={<AddCircleOutlineIcon />}
           onClick={handleAddDoctor}
           sx={{ mb: 2 }}
@@ -110,7 +110,7 @@ export default function Doctors() {
       </Box>
       <Snackbar
         open={alert.open}
-        autoHideDuration={5000} // 5 secondes
+        autoHideDuration={5000} 
         onClose={handleCloseAlert}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
@@ -134,7 +134,7 @@ export default function Doctors() {
               <TableCell>{doctor.email}</TableCell>
               <TableCell>{doctor.speciality}</TableCell>
               <TableCell>
-                <IconButton onClick={() => handleDeleteDoctor(doctor.id)} sx={{ color: "#D32F2F" }}> {/* Couleur rouge pour la poubelle */}
+                <IconButton onClick={() => handleDeleteDoctor(doctor.id)} sx={{ color: "#D32F2F" }}> 
                   <DeleteIcon />
                 </IconButton>
               </TableCell>

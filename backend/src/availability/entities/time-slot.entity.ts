@@ -1,4 +1,4 @@
-// src/availability/entities/time-slot.entity.ts
+
 
 import {
   Entity,
@@ -21,7 +21,7 @@ export class TimeSlot {
   @Column({ type: 'int' })
   availabilityId: number;
 
-  // CORRIGÉ : medecinId est un NUMBER (comme l'id dans users)
+  
   @Column({ type: 'int' })
   medecinId: number;
 
@@ -30,10 +30,10 @@ export class TimeSlot {
 
   
   @Column({ type: 'time' })
-  startTime: string; // "09:00"
+  startTime: string; 
 
   @Column({ type: 'time' })
-  endTime: string; // "09:20"
+  endTime: string; 
 
   @Column({
     type: 'enum',
@@ -48,7 +48,7 @@ export class TimeSlot {
   @Column({ type: 'int', nullable: true })
   appointmentId?: number;
 
-  // Relations
+  
   @ManyToOne(() => Availability, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'availabilityId' })
   availability: Availability;
@@ -57,13 +57,13 @@ export class TimeSlot {
   @JoinColumn({ name: 'medecinId' })
   medecin: User;
 
-  @ManyToOne(() => User, { nullable: true, eager: true }) // eager pour charger le nom du patient direct
+  @ManyToOne(() => User, { nullable: true, eager: true }) 
   @JoinColumn({ name: 'patientId' })
   patient?: User;
 
   
 
-  // AJOUTE CETTE RELATION (si elle n’existe pas encore)
+  
   @ManyToOne(() => Appointment, (appointment) => appointment.timeSlot, {
     onDelete: 'SET NULL',
   })

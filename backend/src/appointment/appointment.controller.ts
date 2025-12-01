@@ -7,7 +7,8 @@ import {
   Put,
   UseGuards,
   Request,
-  Query, 
+  Query,
+  BadRequestException, 
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -19,17 +20,38 @@ import { Role } from 'src/role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
-  @Roles(Role.RECEPTIONNISTE)
-  @Get()
-  async findByDate(@Query('date') date: string) {
-    return this.appointmentService.findByDate(date);
+  
+  
+@Get()
+@Roles(Role.RECEPTIONNISTE, Role.ADMIN) 
+async findByDate(@Query('date') date: string) {
+  if (!date) throw new BadRequestException('Paramètre date requis');
+  return this.appointmentService.findByDate(date);
+}
+
+@Roles(Role.RECEPTIONNISTE)
+@Get('with-bills')
+async findByDateWithBills(@Query('date') date: string) {
+  if (!date) throw new BadRequestException('Paramètre date requis');
+    return this.appointmentService.findByDateWithBills(date);
   }
 
+  @Get('available-slots')
+@Roles(Role.PATIENT, Role.RECEPTIONNISTE, Role.MEDECIN) 
+async getAvailableSlots(
+  @Query('medecinId') medecinId: string,
+  @Query('date') date: string,
+) {
+  if (!medecinId || !date) {
+    throw new BadRequestException('medecinId et date sont requis');
+  }
+  return this.appointmentService.getAvailableSlots(+medecinId, date);
+}
 
   /**
    * Créer un rendez-vous
    * - Patient peut se prendre un RDV lui-même
-   * - Réceptionniste peut prendre un RDV pour un autre patient (via patientId dans le body)
+   * - Réceptionniste peut prendre un RDV pour un autre patient 
    */
   @Roles(Role.PATIENT,Role.RECEPTIONNISTE)
   @Post('add')
@@ -42,7 +64,7 @@ export class AppointmentController {
 }
 
 /**
-   * Récupérer tous MES rendez-vous (patient connecté)
+   * Récupérer tous MES rendez-vous 
    */
   @Roles(Role.PATIENT)
   @Get('my')
@@ -51,8 +73,7 @@ export class AppointmentController {
   }
 
 /**
-   * Récupérer un RDV précis avec toutes les relations (patient, médecin, créneau, etc.)
-   * Utile pour la page détail d'un rendez-vous
+   * Récupérer un RDV précis   
    */
   @Get(':id')
 @Roles(Role.MEDECIN, Role.PATIENT)
@@ -61,7 +82,7 @@ async findOne(@Param('id') id: string) {
 }
 
 /**
-   * Récupérer tous les RDV du médecin connecté (agenda du jour, etc.)
+   * Récupérer tous les RDV du médecin connecté 
    */
   @Roles(Role.MEDECIN)
   @Get('doctor')
@@ -72,7 +93,7 @@ async findOne(@Param('id') id: string) {
 
   /**
    * Annuler un rendez-vous
-   * Patient ou médecin peut annuler (avec règle des 24h)
+   * Patient  peut annuler 
    */
   @Roles(Role.PATIENT, Role.MEDECIN)
   @Put(':id/cancel')
@@ -92,5 +113,12 @@ async complete(
   @Body() body: { diagnostic: string; medicaments: string },
 ) {
   return this.appointmentService.complete(+id, body.diagnostic, body.medicaments);
+}
+
+/** facturation */
+@Roles(Role.RECEPTIONNISTE)
+@Put(':id/finish-and-bill')
+async finishAndGenerateBill(@Param('id') id: string) {
+  return this.appointmentService.finishAndGenerateBill(+id);
 }
 }
